@@ -7,12 +7,12 @@ preMerge:
   env:
     TZ: UTC
   pattern:
-    - "./packages/**/*.test{.ts,.tsx}"
+    - "./**/__tests__/*.test.{js,ts,tsx}"
 postMerge:
   env:
     TZ: UTC
   pattern:
-    - "./packages/**/*.test{.ts,.tsx}"
+    - "./**/__tests__/*.test.{js,ts,tsx}"
 postRun:
   command:
     - yarn --version
