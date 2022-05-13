@@ -32,6 +32,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:regexp/recommended',
     'prettier',
+    'plugin:@docusaurus/all',
   ],
   settings: {
     'import/resolver': {
@@ -41,7 +42,14 @@ module.exports = {
     },
   },
   reportUnusedDisableDirectives: true,
-  plugins: ['react-hooks', 'header', 'jest', '@typescript-eslint', 'regexp'],
+  plugins: [
+    'react-hooks',
+    'header',
+    'jest',
+    '@typescript-eslint',
+    'regexp',
+    '@docusaurus',
+  ],
   rules: {
     'array-callback-return': WARNING,
     camelcase: WARNING,
@@ -63,6 +71,7 @@ module.exports = {
     'no-await-in-loop': OFF,
     'no-case-declarations': WARNING,
     'no-console': OFF,
+    'no-constant-binary-expression': ERROR,
     'no-continue': OFF,
     'no-control-regex': WARNING,
     'no-else-return': [WARNING, {allowElseIf: true}],
@@ -202,7 +211,13 @@ module.exports = {
     'import/no-unresolved': [
       ERROR,
       {
-        ignore: ['^@theme', '^@docusaurus', '^@generated', '^@site'],
+        ignore: [
+          '^@theme',
+          '^@docusaurus',
+          '^@generated',
+          '^@site',
+          '^@testing-utils',
+        ],
       },
     ],
     'import/order': OFF,
@@ -263,6 +278,10 @@ module.exports = {
       ERROR,
       {'ts-expect-error': 'allow-with-description'},
     ],
+    '@typescript-eslint/consistent-indexed-object-style': [
+      WARNING,
+      'index-signature',
+    ],
     '@typescript-eslint/consistent-type-imports': [
       WARNING,
       {disallowTypeAnnotations: false},
@@ -294,6 +313,24 @@ module.exports = {
     // locals must be justified with a disable comment.
     '@typescript-eslint/no-unused-vars': [ERROR, {ignoreRestSiblings: true}],
     '@typescript-eslint/prefer-optional-chain': ERROR,
+    '@docusaurus/no-untranslated-text': [
+      WARNING,
+      {
+        ignoredStrings: [
+          '·',
+          '-',
+          '—',
+          '×',
+          '​', // zwj: &#8203;
+          '@',
+          'WebContainers',
+          'Twitter',
+          'GitHub',
+          'Dev.to',
+          '1.x',
+        ],
+      },
+    ],
   },
   overrides: [
     {
@@ -316,6 +353,7 @@ module.exports = {
         'header/header': OFF,
         'global-require': OFF,
         '@typescript-eslint/no-var-requires': OFF,
+        '@docusaurus/no-untranslated-text': OFF,
       },
     },
     {
@@ -337,6 +375,16 @@ module.exports = {
         // Make JS code directly runnable in Node.
         '@typescript-eslint/no-var-requires': OFF,
         '@typescript-eslint/explicit-module-boundary-types': OFF,
+      },
+    },
+    {
+      files: [
+        '**/__tests__/**',
+        'packages/docusaurus-plugin-debug/**',
+        'website/_dogfooding/**',
+      ],
+      rules: {
+        '@docusaurus/no-untranslated-text': OFF,
       },
     },
     {

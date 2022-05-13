@@ -7,25 +7,19 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import type {Options} from '@docusaurus/plugin-sitemap';
+import logger from '@docusaurus/logger';
 import createSitemap from './createSitemap';
-import type {
-  LoadContext,
-  Props,
-  OptionValidationContext,
-  ValidationResult,
-  Plugin,
-} from '@docusaurus/types';
-import {PluginOptionSchema} from './pluginOptionSchema';
+import type {PluginOptions, Options} from './options';
+import type {LoadContext, Plugin} from '@docusaurus/types';
 
 export default function pluginSitemap(
   context: LoadContext,
-  options: Options,
+  options: PluginOptions,
 ): Plugin<void> {
   return {
     name: 'docusaurus-plugin-sitemap',
 
-    async postBuild({siteConfig, routesPaths, outDir}: Props) {
+    async postBuild({siteConfig, routesPaths, outDir, head}) {
       if (siteConfig.noIndex) {
         return;
       }
@@ -33,6 +27,7 @@ export default function pluginSitemap(
       const generatedSitemap = await createSitemap(
         siteConfig,
         routesPaths,
+        head,
         options,
       );
 
@@ -41,16 +36,12 @@ export default function pluginSitemap(
       try {
         await fs.outputFile(sitemapPath, generatedSitemap);
       } catch (err) {
-        throw new Error(`Writing sitemap failed: ${err}`);
+        logger.error('Writing sitemap failed.');
+        throw err;
       }
     },
   };
 }
 
-export function validateOptions({
-  validate,
-  options,
-}: OptionValidationContext<Options>): ValidationResult<Options> {
-  const validatedOptions = validate(PluginOptionSchema, options);
-  return validatedOptions;
-}
+export {validateOptions} from './options';
+export type {PluginOptions, Options};

@@ -8,19 +8,22 @@
 export {
   NODE_MAJOR_VERSION,
   NODE_MINOR_VERSION,
+  DOCUSAURUS_VERSION,
   DEFAULT_BUILD_DIR_NAME,
   DEFAULT_CONFIG_FILE_NAME,
   BABEL_CONFIG_FILE_NAME,
   GENERATED_FILES_DIR_NAME,
   SRC_DIR_NAME,
-  STATIC_DIR_NAME,
+  DEFAULT_STATIC_DIR_NAME,
   OUTPUT_STATIC_ASSETS_DIR_NAME,
   THEME_PATH,
+  I18N_DIR_NAME,
+  CODE_TRANSLATIONS_FILE_NAME,
   DEFAULT_PORT,
   DEFAULT_PLUGIN_ID,
   WEBPACK_URL_LOADER_LIMIT,
 } from './constants';
-export {generate, genChunkName, readOutputHTMLFile} from './emitUtils';
+export {generate, readOutputHTMLFile} from './emitUtils';
 export {
   getFileCommitDate,
   FileNotTrackedError,
@@ -30,11 +33,11 @@ export {
   mergeTranslations,
   updateTranslationFileMessages,
   getPluginI18nPath,
+  localizePath,
 } from './i18nUtils';
 export {
   removeSuffix,
   removePrefix,
-  getElementsAround,
   mapAsyncSequential,
   findAsyncSequential,
   reportMessage,
@@ -55,9 +58,9 @@ export {
 } from './urlUtils';
 export {
   type Tag,
+  type TagsListItem,
+  type TagModule,
   type FrontMatterTag,
-  type TaggedItemGroup,
-  normalizeFrontMatterTag,
   normalizeFrontMatterTags,
   groupTaggedItems,
 } from './tags';
@@ -73,8 +76,6 @@ export {
 export {
   type ContentPaths,
   type BrokenMarkdownLink,
-  type ReplaceMarkdownLinksParams,
-  type ReplaceMarkdownLinksReturn,
   replaceMarkdownLinks,
 } from './markdownLinks';
 export {type SluggerOptions, type Slugger, createSlugger} from './slugger';

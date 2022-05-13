@@ -11,14 +11,14 @@ import path from 'path';
 import _ from 'lodash';
 import {Globby, posixPath, THEME_PATH} from '@docusaurus/utils';
 import type {SwizzleAction, SwizzleComponentConfig} from '@docusaurus/types';
-import type {SwizzleOptions} from './common';
+import type {SwizzleCLIOptions} from './common';
 import {askSwizzleAction} from './prompts';
 
 export const SwizzleActions: SwizzleAction[] = ['wrap', 'eject'];
 
 export async function getAction(
   componentConfig: SwizzleComponentConfig,
-  options: Pick<SwizzleOptions, 'wrap' | 'eject'>,
+  options: Pick<SwizzleCLIOptions, 'wrap' | 'eject'>,
 ): Promise<SwizzleAction> {
   if (options.wrap) {
     return 'wrap';
@@ -53,7 +53,7 @@ export async function eject({
   const fromPath = path.join(themePath, componentName);
   const isDirectory = await isDir(fromPath);
   const globPattern = isDirectory
-    ? // do we really want to copy all components?
+    ? // Do we really want to copy all components?
       path.join(fromPath, '*')
     : `${fromPath}.*`;
 
@@ -70,22 +70,25 @@ export async function eject({
     );
   }
 
-  const toPath = isDirectory
-    ? path.join(siteDir, THEME_PATH, componentName)
-    : path.join(siteDir, THEME_PATH);
+  const toPath = path.join(siteDir, THEME_PATH);
 
   await fs.ensureDir(toPath);
 
   const createdFiles = await Promise.all(
     filesToCopy.map(async (sourceFile: string) => {
-      const fileName = path.basename(sourceFile);
-      const targetFile = path.join(toPath, fileName);
+      const targetFile = path.join(
+        toPath,
+        path.relative(themePath, sourceFile),
+      );
       try {
-        await fs.copy(sourceFile, targetFile, {overwrite: true});
-      } catch (err) {
-        throw new Error(
-          logger.interpolate`Could not copy file from ${sourceFile} to ${targetFile}`,
+        const fileContents = await fs.readFile(sourceFile, 'utf-8');
+        await fs.outputFile(
+          targetFile,
+          fileContents.trimStart().replace(/^\/\*.+?\*\/\s*/ms, ''),
         );
+      } catch (err) {
+        logger.error`Could not copy file from path=${sourceFile} to path=${targetFile}`;
+        throw err;
       }
       return targetFile;
     }),
@@ -122,7 +125,7 @@ export async function wrap({
 import type ${componentName}Type from '@theme/${themeComponentName}';
 import ${componentName} from '@theme-${importType}/${themeComponentName}';
 
-type Props = ComponentProps<typeof ${componentName}Type>
+type Props = ComponentProps<typeof ${componentName}Type>;
 
 export default function ${wrapperComponentName}(props: Props): JSX.Element {
   return (

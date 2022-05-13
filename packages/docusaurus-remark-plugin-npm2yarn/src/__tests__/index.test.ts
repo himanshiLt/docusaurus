@@ -6,9 +6,7 @@
  */
 
 import remark from 'remark';
-// import from the transpiled lib because Babel can't transpile `export =`
-// TODO change to `../index` after migrating to ESM
-import npm2yarn from '../../lib/index';
+import npm2yarn from '../index';
 import vfile from 'to-vfile';
 import path from 'path';
 import mdx from 'remark-mdx';
@@ -16,10 +14,7 @@ import mdx from 'remark-mdx';
 const processFixture = async (name: string, options?: {sync?: boolean}) => {
   const filePath = path.join(__dirname, '__fixtures__', `${name}.md`);
   const file = await vfile.read(filePath);
-  const result = await remark()
-    .use(mdx)
-    .use(npm2yarn, {...options, filePath})
-    .process(file);
+  const result = await remark().use(mdx).use(npm2yarn, options).process(file);
 
   return result.toString();
 };
@@ -37,7 +32,13 @@ describe('npm2yarn plugin', () => {
     expect(result).toMatchSnapshot();
   });
 
-  it('works when language is not set', async () => {
+  it('works with sync option', async () => {
+    const result = await processFixture('plugin', {sync: true});
+
+    expect(result).toMatchSnapshot();
+  });
+
+  it('does not work when language is not set', async () => {
     const result = await processFixture('syntax-not-properly-set');
 
     expect(result).toMatchSnapshot();

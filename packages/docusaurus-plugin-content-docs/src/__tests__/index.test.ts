@@ -16,11 +16,11 @@ import pluginContentDocs from '../index';
 import {loadContext} from '@docusaurus/core/src/server/index';
 import {applyConfigureWebpack} from '@docusaurus/core/src/webpack/utils';
 import type {RouteConfig} from '@docusaurus/types';
-import {posixPath, DEFAULT_PLUGIN_ID} from '@docusaurus/utils';
-import {sortConfig} from '@docusaurus/core/src/server/plugins';
+import {posixPath} from '@docusaurus/utils';
+import {sortConfig} from '@docusaurus/core/src/server/plugins/routeConfig';
 
 import * as cliDocs from '../cli';
-import {OptionsSchema} from '../options';
+import {validateOptions} from '../options';
 import {normalizePluginOptions} from '@docusaurus/utils-validation';
 import type {LoadedVersion} from '../types';
 import type {
@@ -52,7 +52,7 @@ Available ids are:\n- ${version.docs.map((d) => d.unversionedId).join('\n- ')}`,
 
 const createFakeActions = (contentDir: string) => {
   const routeConfigs: RouteConfig[] = [];
-  const dataContainer: Record<string, unknown> = {};
+  const dataContainer: {[key: string]: unknown} = {};
   const globalDataContainer: {pluginName?: {pluginId: unknown}} = {};
 
   const actions = {
@@ -68,8 +68,8 @@ const createFakeActions = (contentDir: string) => {
     },
   };
 
-  // query by prefix, because files have a hash at the end
-  // so it's not convenient to query by full filename
+  // Query by prefix, because files have a hash at the end so it's not
+  // convenient to query by full filename
   const getCreatedDataByPrefix = (prefix: string) => {
     const entry = Object.entries(dataContainer).find(([key]) =>
       key.startsWith(prefix),
@@ -115,12 +115,15 @@ Entries created:
 describe('sidebar', () => {
   it('site with wrong sidebar content', async () => {
     const siteDir = path.join(__dirname, '__fixtures__', 'simple-site');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const sidebarPath = path.join(siteDir, 'wrong-sidebars.json');
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        sidebarPath,
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          sidebarPath,
+        },
       }),
     );
     await expect(plugin.loadContent!()).rejects.toThrowErrorMatchingSnapshot();
@@ -128,19 +131,23 @@ describe('sidebar', () => {
 
   it('site with wrong sidebar file path', async () => {
     const siteDir = path.join(__dirname, '__fixtures__', 'site-with-doc-label');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
 
     await expect(async () => {
       const plugin = await pluginContentDocs(
         context,
-        normalizePluginOptions(OptionsSchema, {
-          sidebarPath: 'wrong-path-sidebar.json',
+        validateOptions({
+          validate: normalizePluginOptions,
+          options: {
+            sidebarPath: 'wrong-path-sidebar.json',
+          },
         }),
       );
+
       await plugin.loadContent!();
     }).rejects.toThrowErrorMatchingInlineSnapshot(`
-            "The path to the sidebar file does not exist at \\"wrong-path-sidebar.json\\".
-            Please set the docs \\"sidebarPath\\" field in your config file to:
+            "The path to the sidebar file does not exist at "wrong-path-sidebar.json".
+            Please set the docs "sidebarPath" field in your config file to:
             - a sidebars path that exists
             - false: to disable the sidebar
             - undefined: for Docusaurus to generate it automatically"
@@ -149,11 +156,14 @@ describe('sidebar', () => {
 
   it('site with undefined sidebar', async () => {
     const siteDir = path.join(__dirname, '__fixtures__', 'site-with-doc-label');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        sidebarPath: undefined,
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          sidebarPath: undefined,
+        },
       }),
     );
     const result = await plugin.loadContent!();
@@ -164,11 +174,14 @@ describe('sidebar', () => {
 
   it('site with disabled sidebar', async () => {
     const siteDir = path.join(__dirname, '__fixtures__', 'site-with-doc-label');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        sidebarPath: false,
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          sidebarPath: false,
+        },
       }),
     );
     const result = await plugin.loadContent!();
@@ -182,30 +195,33 @@ describe('empty/no docs website', () => {
   const siteDir = path.join(__dirname, '__fixtures__', 'empty-site');
 
   it('no files in docs folder', async () => {
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     await fs.ensureDir(path.join(siteDir, 'docs'));
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {}),
+      validateOptions({validate: normalizePluginOptions, options: {}}),
     );
     await expect(
       plugin.loadContent!(),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Docs version \\"current\\" has no docs! At least one doc should exist at \\"docs\\"."`,
+      `"Docs version "current" has no docs! At least one doc should exist at "docs"."`,
     );
   });
 
   it('docs folder does not exist', async () => {
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     await expect(
       pluginContentDocs(
         context,
-        normalizePluginOptions(OptionsSchema, {
-          path: `path/does/not/exist`,
+        validateOptions({
+          validate: normalizePluginOptions,
+          options: {
+            path: 'path/does/not/exist',
+          },
         }),
       ),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The docs folder does not exist for version \\"current\\". A docs folder is expected to be found at path/does/not/exist."`,
+      `"The docs folder does not exist for version "current". A docs folder is expected to be found at path/does/not/exist."`,
     );
   });
 });
@@ -213,22 +229,23 @@ describe('empty/no docs website', () => {
 describe('simple website', () => {
   async function loadSite() {
     const siteDir = path.join(__dirname, '__fixtures__', 'simple-site');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const sidebarPath = path.join(siteDir, 'sidebars.json');
-    const plugin = await pluginContentDocs(
-      context,
-      normalizePluginOptions(OptionsSchema, {
+    const options = validateOptions({
+      validate: normalizePluginOptions,
+      options: {
         path: 'docs',
         sidebarPath,
-      }),
-    );
+      },
+    });
+    const plugin = await pluginContentDocs(context, options);
     const pluginContentDir = path.join(context.generatedFilesDir, plugin.name);
 
-    return {siteDir, context, sidebarPath, plugin, pluginContentDir};
+    return {siteDir, context, sidebarPath, plugin, options, pluginContentDir};
   }
 
   it('extendCli - docsVersion', async () => {
-    const {siteDir, sidebarPath, plugin} = await loadSite();
+    const {plugin, options, context} = await loadSite();
     const mock = jest
       .spyOn(cliDocs, 'cliDocsVersionCommand')
       .mockImplementation(async () => {});
@@ -238,12 +255,7 @@ describe('simple website', () => {
     plugin.extendCli!(cli);
     cli.parse(['node', 'test', 'docs:version', '1.0.0']);
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(mock).toHaveBeenCalledWith('1.0.0', siteDir, DEFAULT_PLUGIN_ID, {
-      path: 'docs',
-      sidebarPath,
-      sidebarCollapsed: true,
-      sidebarCollapsible: true,
-    });
+    expect(mock).toHaveBeenCalledWith('1.0.0', options, context);
     mock.mockRestore();
   });
 
@@ -323,29 +335,31 @@ describe('simple website', () => {
 describe('versioned website', () => {
   async function loadSite() {
     const siteDir = path.join(__dirname, '__fixtures__', 'versioned-site');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const sidebarPath = path.join(siteDir, 'sidebars.json');
     const routeBasePath = 'docs';
-    const plugin = await pluginContentDocs(
-      context,
-      normalizePluginOptions(OptionsSchema, {
+    const options = validateOptions({
+      validate: normalizePluginOptions,
+      options: {
         routeBasePath,
         sidebarPath,
-      }),
-    );
+      },
+    });
+    const plugin = await pluginContentDocs(context, options);
     const pluginContentDir = path.join(context.generatedFilesDir, plugin.name);
     return {
       siteDir,
       context,
       routeBasePath,
       sidebarPath,
+      options,
       plugin,
       pluginContentDir,
     };
   }
 
   it('extendCli - docsVersion', async () => {
-    const {siteDir, routeBasePath, sidebarPath, plugin} = await loadSite();
+    const {plugin, context, options} = await loadSite();
     const mock = jest
       .spyOn(cliDocs, 'cliDocsVersionCommand')
       .mockImplementation(async () => {});
@@ -355,12 +369,7 @@ describe('versioned website', () => {
     plugin.extendCli!(cli);
     cli.parse(['node', 'test', 'docs:version', '2.0.0']);
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(mock).toHaveBeenCalledWith('2.0.0', siteDir, DEFAULT_PLUGIN_ID, {
-      path: routeBasePath,
-      sidebarPath,
-      sidebarCollapsed: true,
-      sidebarCollapsible: true,
-    });
+    expect(mock).toHaveBeenCalledWith('2.0.0', options, context);
     mock.mockRestore();
   });
 
@@ -449,19 +458,20 @@ describe('versioned website', () => {
 describe('versioned website (community)', () => {
   async function loadSite() {
     const siteDir = path.join(__dirname, '__fixtures__', 'versioned-site');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const sidebarPath = path.join(siteDir, 'community_sidebars.json');
     const routeBasePath = 'community';
     const pluginId = 'community';
-    const plugin = await pluginContentDocs(
-      context,
-      normalizePluginOptions(OptionsSchema, {
+    const options = validateOptions({
+      validate: normalizePluginOptions,
+      options: {
         id: 'community',
         path: 'community',
         routeBasePath,
         sidebarPath,
-      }),
-    );
+      },
+    });
+    const plugin = await pluginContentDocs(context, options);
     const pluginContentDir = path.join(context.generatedFilesDir, plugin.name);
     return {
       siteDir,
@@ -469,14 +479,14 @@ describe('versioned website (community)', () => {
       routeBasePath,
       sidebarPath,
       pluginId,
+      options,
       plugin,
       pluginContentDir,
     };
   }
 
   it('extendCli - docsVersion', async () => {
-    const {siteDir, routeBasePath, sidebarPath, pluginId, plugin} =
-      await loadSite();
+    const {pluginId, plugin, options, context} = await loadSite();
     const mock = jest
       .spyOn(cliDocs, 'cliDocsVersionCommand')
       .mockImplementation(async () => {});
@@ -486,12 +496,7 @@ describe('versioned website (community)', () => {
     plugin.extendCli!(cli);
     cli.parse(['node', 'test', `docs:version:${pluginId}`, '2.0.0']);
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(mock).toHaveBeenCalledWith('2.0.0', siteDir, pluginId, {
-      path: routeBasePath,
-      sidebarPath,
-      sidebarCollapsed: true,
-      sidebarCollapsible: true,
-    });
+    expect(mock).toHaveBeenCalledWith('2.0.0', options, context);
     mock.mockRestore();
   });
 
@@ -554,13 +559,16 @@ describe('versioned website (community)', () => {
 describe('site with doc label', () => {
   async function loadSite() {
     const siteDir = path.join(__dirname, '__fixtures__', 'site-with-doc-label');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const sidebarPath = path.join(siteDir, 'sidebars.json');
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        path: 'docs',
-        sidebarPath,
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          path: 'docs',
+          sidebarPath,
+        },
       }),
     );
 
@@ -593,11 +601,14 @@ describe('site with full autogenerated sidebar', () => {
       '__fixtures__',
       'site-with-autogenerated-sidebar',
     );
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        path: 'docs',
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          path: 'docs',
+        },
       }),
     );
 
@@ -645,17 +656,20 @@ describe('site with partial autogenerated sidebars', () => {
       '__fixtures__',
       'site-with-autogenerated-sidebar',
     );
-    const context = await loadContext(siteDir, {});
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        path: 'docs',
-        sidebarPath: path.join(
-          __dirname,
-          '__fixtures__',
-          'site-with-autogenerated-sidebar',
-          'partialAutogeneratedSidebars.js',
-        ),
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          path: 'docs',
+          sidebarPath: path.join(
+            __dirname,
+            '__fixtures__',
+            'site-with-autogenerated-sidebar',
+            'partialAutogeneratedSidebars.js',
+          ),
+        },
       }),
     );
 
@@ -698,17 +712,20 @@ describe('site with partial autogenerated sidebars 2 (fix #4638)', () => {
       '__fixtures__',
       'site-with-autogenerated-sidebar',
     );
-    const context = await loadContext(siteDir, {});
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        path: 'docs',
-        sidebarPath: path.join(
-          __dirname,
-          '__fixtures__',
-          'site-with-autogenerated-sidebar',
-          'partialAutogeneratedSidebars2.js',
-        ),
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          path: 'docs',
+          sidebarPath: path.join(
+            __dirname,
+            '__fixtures__',
+            'site-with-autogenerated-sidebar',
+            'partialAutogeneratedSidebars2.js',
+          ),
+        },
       }),
     );
 
@@ -732,12 +749,15 @@ describe('site with custom sidebar items generator', () => {
       '__fixtures__',
       'site-with-autogenerated-sidebar',
     );
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const plugin = await pluginContentDocs(
       context,
-      normalizePluginOptions(OptionsSchema, {
-        path: 'docs',
-        sidebarItemsGenerator,
+      validateOptions({
+        validate: normalizePluginOptions,
+        options: {
+          path: 'docs',
+          sidebarItemsGenerator,
+        },
       }),
     );
     const content = (await plugin.loadContent?.())!;

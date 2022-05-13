@@ -18,6 +18,8 @@ import Tweet from '@site/src/components/Tweet';
 import Tweets, {type TweetItem} from '@site/src/data/tweets';
 import Quotes from '@site/src/data/quotes';
 import Features, {type FeatureItem} from '@site/src/data/features';
+import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
 import clsx from 'clsx';
 
@@ -54,7 +56,7 @@ function HeroBanner() {
             <Translate>Get Started</Translate>
           </Link>
           <Link className="button button--info" to="https://docusaurus.new">
-            <Translate>Playground</Translate>
+            <Translate>Try a Demo</Translate>
           </Link>
           <span className={styles.indexCtasGitHubButtonWrapper}>
             <iframe
@@ -90,9 +92,8 @@ function MigrationAnnouncement() {
               </Link>
             ),
           }}>
-          {`Coming from {docusaurusV1Link}? Check out our {migrationGuideLink}`}
+          {`Coming from {docusaurusV1Link}? Check out our {migrationGuideLink}.`}
         </Translate>
-        .
       </div>
     </div>
   );
@@ -108,7 +109,7 @@ function TweetsSection() {
     <div className={clsx(styles.section, styles.sectionAlt)}>
       <div className="container">
         <h2 className={clsx('margin-bottom--lg', 'text--center')}>
-          Loved by many engineers
+          <Translate>Loved by many engineers</Translate>
         </h2>
         <div className={clsx('row', styles.tweetsSection)}>
           {tweetColumns.map((tweetItems, i) => (
@@ -163,14 +164,12 @@ function VideoContainer() {
             <Translate>Check it out in the intro video</Translate>
           </h2>
           <div className="video-container">
-            <iframe
-              width="560"
-              height="315"
-              src="https://www.youtube.com/embed/_An9EsKPhp0"
+            <LiteYouTubeEmbed
+              id="_An9EsKPhp0"
+              params="autoplay=1&autohide=1&showinfo=0&rel=0"
               title="Explain Like I'm 5: Docusaurus"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+              poster="maxresdefault"
+              webp
             />
           </div>
         </div>
@@ -193,9 +192,10 @@ function Feature({
       <img
         className={styles.featureImage}
         alt={feature.title}
-        width={feature.image.width}
-        height={feature.image.height}
+        width={Math.floor(feature.image.width)}
+        height={Math.floor(feature.image.height)}
         src={withBaseUrl(feature.image.src)}
+        loading="lazy"
       />
       <h3 className={clsx(styles.featureHeading)}>{feature.title}</h3>
       <p className="padding-horiz--md">{feature.text}</p>
@@ -240,11 +240,19 @@ export default function Home(): JSX.Element {
       <main>
         <div>
           <div className={styles.banner}>
-            Support Ukraine 🇺🇦{' '}
-            <Link to="https://opensource.facebook.com/support-ukraine">
-              Help Provide Humanitarian Aid to Ukraine
-            </Link>
-            .
+            <Translate
+              id="homepage.banner"
+              values={{
+                link: (
+                  <Link to="https://opensource.facebook.com/support-ukraine">
+                    <Translate id="homepage.banner.link">
+                      Help Provide Humanitarian Aid to Ukraine
+                    </Translate>
+                  </Link>
+                ),
+              }}>
+              {'Support Ukraine 🇺🇦 {link}.'}
+            </Translate>
           </div>
         </div>
         <HeroBanner />

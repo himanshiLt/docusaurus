@@ -25,8 +25,7 @@ import crypto from 'crypto';
 import logger from '@docusaurus/logger';
 import type {TransformOptions} from '@babel/core';
 import type {
-  ConfigureWebpackFn,
-  ConfigurePostCssFn,
+  Plugin,
   PostCssOptions,
   ConfigureWebpackUtils,
 } from '@docusaurus/types';
@@ -172,7 +171,7 @@ export const getCustomizableJSLoader =
  * @returns final/ modified webpack config
  */
 export function applyConfigureWebpack(
-  configureWebpack: ConfigureWebpackFn,
+  configureWebpack: NonNullable<Plugin['configureWebpack']>,
   config: Configuration,
   isServer: boolean,
   jsLoader: 'babel' | ((isServer: boolean) => RuleSetRule) | undefined,
@@ -184,12 +183,8 @@ export function applyConfigureWebpack(
     getJSLoader: getCustomizableJSLoader(jsLoader),
   };
   if (typeof configureWebpack === 'function') {
-    const {mergeStrategy, ...res} = configureWebpack(
-      config,
-      isServer,
-      utils,
-      content,
-    );
+    const {mergeStrategy, ...res} =
+      configureWebpack(config, isServer, utils, content) ?? {};
     if (res && typeof res === 'object') {
       const customizeRules = mergeStrategy ?? {};
       return mergeWithCustomize({
@@ -202,14 +197,14 @@ export function applyConfigureWebpack(
 }
 
 export function applyConfigurePostCss(
-  configurePostCss: NonNullable<ConfigurePostCssFn>,
+  configurePostCss: NonNullable<Plugin['configurePostCss']>,
   config: Configuration,
 ): Configuration {
   type LocalPostCSSLoader = unknown & {
     options: {postcssOptions: PostCssOptions};
   };
 
-  // not ideal heuristic but good enough for our use-case?
+  // Not ideal heuristic but good enough for our use-case?
   function isPostCssLoader(loader: unknown): loader is LocalPostCSSLoader {
     return !!(loader as LocalPostCSSLoader)?.options?.postcssOptions;
   }
@@ -254,7 +249,7 @@ export function compile(config: Configuration[]): Promise<void> {
         }
         reject(err);
       }
-      // let plugins consume all the stats
+      // Let plugins consume all the stats
       const errorsWarnings = stats?.toJson('errors-warnings');
       if (stats?.hasErrors()) {
         reject(new Error('Failed to compile with errors.'));
@@ -296,20 +291,16 @@ function validateKeyAndCerts({
     // publicEncrypt will throw an error with an invalid cert
     encrypted = crypto.publicEncrypt(cert, Buffer.from('test'));
   } catch (err) {
-    throw new Error(
-      `The certificate ${crtFile} is invalid.
-${err}`,
-    );
+    logger.error`The certificate path=${crtFile} is invalid.`;
+    throw err;
   }
 
   try {
     // privateDecrypt will throw an error with an invalid key
     crypto.privateDecrypt(key, encrypted);
   } catch (err) {
-    throw new Error(
-      `The certificate key ${keyFile} is invalid.
-${err}`,
-    );
+    logger.error`The certificate key path=${keyFile} is invalid.`;
+    throw err;
   }
 }
 
@@ -368,7 +359,7 @@ export function getMinimizer(
       parallel: getTerserParallel(),
       terserOptions: {
         parse: {
-          // we want uglify-js to parse ecma 8 code. However, we don't want it
+          // We want uglify-js to parse ecma 8 code. However, we don't want it
           // to apply any minification steps that turns valid ecma 5 code
           // into invalid ecma 5 code. This is why the 'compress' and 'output'
           // sections only apply transformations that are ecma 5 safe

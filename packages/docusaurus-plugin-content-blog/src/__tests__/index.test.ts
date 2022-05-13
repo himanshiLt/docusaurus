@@ -9,9 +9,9 @@ import {jest} from '@jest/globals';
 import path from 'path';
 import pluginContentBlog from '../index';
 import type {DocusaurusConfig, LoadContext, I18n} from '@docusaurus/types';
-import {PluginOptionSchema} from '../pluginOptionSchema';
+import {validateOptions} from '../options';
 import type {BlogPost} from '../types';
-import type {Joi} from '@docusaurus/utils-validation';
+import {normalizePluginOptions} from '@docusaurus/utils-validation';
 import {posixPath, getFileCommitDate} from '@docusaurus/utils';
 import type {
   PluginOptions,
@@ -41,23 +41,11 @@ function getI18n(locale: string): I18n {
     currentLocale: locale,
     locales: [locale],
     defaultLocale: locale,
-    localeConfigs: {},
+    localeConfigs: {[locale]: {calendar: 'gregory'}},
   };
 }
 
 const DefaultI18N: I18n = getI18n('en');
-
-function validateAndNormalize(
-  schema: Joi.ObjectSchema,
-  options: Partial<PluginOptions>,
-) {
-  const {value, error} = schema.validate(options);
-  if (error) {
-    throw error;
-  } else {
-    return value;
-  }
-}
 
 const PluginPath = 'blog';
 
@@ -81,11 +69,14 @@ const getPlugin = async (
       generatedFilesDir,
       i18n,
     } as LoadContext,
-    validateAndNormalize(PluginOptionSchema, {
-      path: PluginPath,
-      editUrl: BaseEditUrl,
-      ...pluginOptions,
-    }),
+    validateOptions({
+      validate: normalizePluginOptions,
+      options: {
+        path: PluginPath,
+        editUrl: BaseEditUrl,
+        ...pluginOptions,
+      },
+    }) as PluginOptions,
   );
 };
 
@@ -167,7 +158,6 @@ describe('blog plugin', () => {
       readingTime: 0.015,
       source: path.posix.join(
         '@site',
-        // pluginPath,
         path.posix.join('i18n', 'en', 'docusaurus-plugin-content-blog'),
         '2018-12-14-Happy-First-Birthday-Slash.md',
       ),
@@ -430,7 +420,7 @@ describe('blog plugin', () => {
     const blogPosts = await getBlogPosts(siteDir);
     const noDateSource = path.posix.join('@site', PluginPath, 'no date.md');
     const noDateSourceFile = path.posix.join(siteDir, PluginPath, 'no date.md');
-    // we know the file exist and we know we have git
+    // We know the file exists and we know we have git
     const result = getFileCommitDate(noDateSourceFile, {age: 'oldest'});
     const noDateSourceTime = result.date;
     const formattedDate = Intl.DateTimeFormat('en', {

@@ -31,10 +31,15 @@ function hasParent(node: HTMLElement | null, parent: HTMLElement): boolean {
 }
 
 export type DetailsProps = {
+  /** Summary is provided as props, including the wrapping `<summary>` tag */
   summary?: ReactElement;
 } & ComponentProps<'details'>;
 
-export default function Details({
+/**
+ * A mostly un-styled `<details>` element with smooth collapsing. Provides some
+ * very lightweight styles, but you should bring your UI.
+ */
+export function Details({
   summary,
   children,
   ...props
@@ -45,8 +50,8 @@ export default function Details({
   const {collapsed, setCollapsed} = useCollapsible({
     initialState: !props.open,
   });
-  // Use a separate prop because it must be set only after animation completes
-  // Otherwise close anim won't work
+  // Use a separate state for the actual details prop, because it must be set
+  // only after animation completes, otherwise close animations won't work
   const [open, setOpen] = useState(props.open);
 
   return (
@@ -82,10 +87,12 @@ export default function Details({
           setOpen(true);
         } else {
           setCollapsed(true);
-          // setOpen(false); // Don't do this, it breaks close animation!
+          // Don't do this, it breaks close animation!
+          // setOpen(false);
         }
       }}>
-      {summary}
+      {/* eslint-disable-next-line @docusaurus/no-untranslated-text */}
+      {summary || <summary>Details</summary>}
 
       <Collapsible
         lazy={false} // Content might matter for SEO in this case

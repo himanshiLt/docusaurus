@@ -13,7 +13,7 @@ import tree from 'tree-node-cli';
 import {eject, wrap} from '../actions';
 import {posixPath} from '@docusaurus/utils';
 
-// use relative paths and sort files for tests
+// Use relative paths and sort files for tests
 function stableCreatedFiles(
   siteThemePath: string,
   createdFiles: string[],
@@ -69,6 +69,20 @@ describe('eject', () => {
               ├── index.tsx
               ├── styles.css
               └── styles.module.css"
+    `);
+  });
+
+  it(`eject ${Components.Sibling}`, async () => {
+    const result = await testEject('eject', Components.Sibling);
+    expect(result.createdFiles).toEqual([
+      'ComponentInFolder/Sibling.css',
+      'ComponentInFolder/Sibling.tsx',
+    ]);
+    expect(result.tree).toMatchInlineSnapshot(`
+      "theme
+      └── ComponentInFolder
+          ├── Sibling.css
+          └── Sibling.tsx"
     `);
   });
 

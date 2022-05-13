@@ -9,7 +9,7 @@ import {jest} from '@jest/globals';
 import React from 'react';
 import {usePluralForm} from '../usePluralForm';
 import {renderHook} from '@testing-library/react-hooks';
-import {Context} from '@docusaurus/docusaurusContext';
+import {Context} from '@docusaurus/core/src/client/docusaurusContext';
 import type {DocusaurusContext} from '@docusaurus/types';
 
 describe('usePluralForm', () => {
@@ -69,7 +69,7 @@ describe('usePluralForm', () => {
     expect(mockUsePluralForm().selectMessage(1, 'one|many')).toBe('one');
     expect(mockUsePluralForm().selectMessage(10, 'one|many')).toBe('many');
     expect(consoleMock.mock.calls[0][0]).toMatchInlineSnapshot(`
-      "Failed to use Intl.PluralRules for locale \\"zh-Hans\\".
+      "Failed to use Intl.PluralRules for locale "zh-Hans".
       Docusaurus will fallback to the default (English) implementation.
       Error: pluralRules.resolvedOptions is not a function
       "

@@ -7,9 +7,11 @@
 
 import {jest} from '@jest/globals';
 import path from 'path';
+import {createSlugger} from '@docusaurus/utils';
 import {loadSidebars, DisabledSidebars} from '../index';
 import type {SidebarProcessorParams} from '../types';
 import {DefaultSidebarItemsGenerator} from '../generator';
+import type {DocMetadata} from '@docusaurus/plugin-content-docs';
 
 describe('loadSidebars', () => {
   const fixtureDir = path.join(__dirname, '__fixtures__', 'sidebars');
@@ -24,7 +26,9 @@ describe('loadSidebars', () => {
         frontMatter: {},
       },
     ],
+    drafts: [],
     version: {
+      path: 'version',
       contentPath: path.join(fixtureDir, 'docs'),
       contentPathLocalized: path.join(fixtureDir, 'docs'),
     },
@@ -34,6 +38,16 @@ describe('loadSidebars', () => {
   it('sidebars with known sidebar item type', async () => {
     const sidebarPath = path.join(fixtureDir, 'sidebars.json');
     const result = await loadSidebars(sidebarPath, params);
+    expect(result).toMatchSnapshot();
+  });
+
+  it('sidebars with some draft items', async () => {
+    const sidebarPath = path.join(fixtureDir, 'sidebars.json');
+    const paramsWithDrafts: SidebarProcessorParams = {
+      ...params,
+      drafts: [{id: 'foo/baz'} as DocMetadata, {id: 'hello'} as DocMetadata],
+    };
+    const result = await loadSidebars(sidebarPath, paramsWithDrafts);
     expect(result).toMatchSnapshot();
   });
 
@@ -62,7 +76,7 @@ describe('loadSidebars', () => {
     await expect(() =>
       loadSidebars(sidebarPath, params),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Invalid sidebar items collection [36m\`\\"doc1\\"\`[39m in [36m\`items\`[39m of the category [34m[1mCategory Label[22m[39m: it must either be an array of sidebar items or a shorthand notation (which doesn't contain a [36m\`type\`[39m property). See [36m[4mhttps://docusaurus.io/docs/sidebar/items[24m[39m for all valid syntaxes."`,
+      `"Invalid sidebar items collection \`"doc1"\` in \`items\` of the category Category Label: it must either be an array of sidebar items or a shorthand notation (which doesn't contain a \`type\` property). See https://docusaurus.io/docs/sidebar/items for all valid syntaxes."`,
     );
   });
 
@@ -112,6 +126,32 @@ describe('loadSidebars', () => {
     expect(result).toMatchSnapshot();
   });
 
+  it('loads sidebars with index-only categories', async () => {
+    const sidebarPath = path.join(fixtureDir, 'sidebars-category-index.json');
+    const result = await loadSidebars(sidebarPath, {
+      ...params,
+      docs: [
+        {
+          id: 'tutorials/tutorial-basics',
+          source: '@site/docs/tutorials/tutorial-basics/index.md',
+          sourceDirName: 'tutorials/tutorial-basics',
+          frontMatter: {},
+        },
+      ],
+    });
+    expect(result).toMatchSnapshot();
+  });
+
+  it('loads sidebars with interspersed draft items', async () => {
+    const sidebarPath = path.join(fixtureDir, 'sidebars-drafts.json');
+    const result = await loadSidebars(sidebarPath, {
+      ...params,
+      drafts: [{id: 'draft1'}, {id: 'draft2'}, {id: 'draft3'}],
+      categoryLabelSlugger: createSlugger(),
+    });
+    expect(result).toMatchSnapshot();
+  });
+
   it('duplicate category metadata files', async () => {
     const sidebarPath = path.join(
       fixtureDir,
@@ -131,7 +171,7 @@ describe('loadSidebars', () => {
           contentPathLocalized: path.join(fixtureDir, 'invalid-docs'),
         },
       }),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(`"\\"foo\\" is not allowed"`);
+    ).rejects.toThrowErrorMatchingInlineSnapshot(`""foo" is not allowed"`);
     expect(consoleWarnMock).toBeCalledWith(
       expect.stringMatching(
         /.*\[WARNING\].* There are more than one category metadata files for .*foo.*: foo\/_category_.json, foo\/_category_.yml. The behavior is undetermined./,

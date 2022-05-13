@@ -12,9 +12,9 @@ import {linkify} from '../linkify';
 import type {
   DocsMarkdownOption,
   SourceToPermalink,
-  VersionMetadata,
-  BrokenMarkdownLink,
+  DocBrokenMarkdownLink,
 } from '../../types';
+import type {VersionMetadata} from '@docusaurus/plugin-content-docs';
 import {VERSIONED_DOCS_DIR, CURRENT_VERSION_NAME} from '../../constants';
 
 function createFakeVersion({
@@ -75,7 +75,7 @@ const sourceToPermalink: SourceToPermalink = {
 
   '@site/i18n/fr/docusaurus-plugin-content-docs/current/doc-localized.md':
     '/fr/doc-localized',
-  '@site/docs/doc-localized': '/doc-localized',
+  '@site/docs/doc-localized.md': '/doc-localized',
 };
 
 function createMarkdownOptions(
@@ -156,22 +156,22 @@ describe('linkify', () => {
       filePath: doc5,
       link: 'docNotExist1.md',
       contentPaths: versionCurrent,
-    } as BrokenMarkdownLink);
+    } as DocBrokenMarkdownLink);
     expect(onBrokenMarkdownLink).toHaveBeenNthCalledWith(2, {
       filePath: doc5,
       link: './docNotExist2.mdx',
       contentPaths: versionCurrent,
-    } as BrokenMarkdownLink);
+    } as DocBrokenMarkdownLink);
     expect(onBrokenMarkdownLink).toHaveBeenNthCalledWith(3, {
       filePath: doc5,
       link: '../docNotExist3.mdx',
       contentPaths: versionCurrent,
-    } as BrokenMarkdownLink);
+    } as DocBrokenMarkdownLink);
     expect(onBrokenMarkdownLink).toHaveBeenNthCalledWith(4, {
       filePath: doc5,
       link: './subdir/docNotExist4.md',
       contentPaths: versionCurrent,
-    } as BrokenMarkdownLink);
+    } as DocBrokenMarkdownLink);
   });
 
   it('transforms absolute links in versioned docs', async () => {
@@ -200,7 +200,7 @@ describe('linkify', () => {
     await expect(() =>
       transform(doc1),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Unexpected error: Markdown file at \\"<PROJECT_ROOT>/packages/docusaurus-plugin-content-docs/src/markdown/__tests__/__fixtures__/outside/doc1.md\\" does not belong to any docs version!"`,
+      `"Unexpected error: Markdown file at "<PROJECT_ROOT>/packages/docusaurus-plugin-content-docs/src/markdown/__tests__/__fixtures__/outside/doc1.md" does not belong to any docs version!"`,
     );
   });
 });

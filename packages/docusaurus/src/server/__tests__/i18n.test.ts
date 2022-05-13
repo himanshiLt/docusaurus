@@ -6,9 +6,8 @@
  */
 
 import {jest} from '@jest/globals';
-import {loadI18n, localizePath, getDefaultLocaleConfig} from '../i18n';
+import {loadI18n, getDefaultLocaleConfig} from '../i18n';
 import {DEFAULT_I18N_CONFIG} from '../configValidation';
-import path from 'path';
 import type {I18nConfig} from '@docusaurus/types';
 
 function testLocaleConfigsFor(locales: string[]) {
@@ -33,48 +32,63 @@ describe('defaultLocaleConfig', () => {
       label: 'Français',
       direction: 'ltr',
       htmlLang: 'fr',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('fr-FR')).toEqual({
       label: 'Français (France)',
       direction: 'ltr',
       htmlLang: 'fr-FR',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('en')).toEqual({
       label: 'English',
       direction: 'ltr',
       htmlLang: 'en',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('en-US')).toEqual({
       label: 'American English',
       direction: 'ltr',
       htmlLang: 'en-US',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('zh')).toEqual({
       label: '中文',
       direction: 'ltr',
       htmlLang: 'zh',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('zh-CN')).toEqual({
       label: '中文（中国）',
       direction: 'ltr',
       htmlLang: 'zh-CN',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('en-US')).toEqual({
       label: 'American English',
       direction: 'ltr',
       htmlLang: 'en-US',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('fa')).toEqual({
       // cSpell:ignore فارسی
       label: 'فارسی',
       direction: 'rtl',
       htmlLang: 'fa',
+      calendar: 'gregory',
     });
     expect(getDefaultLocaleConfig('fa-IR')).toEqual({
       // cSpell:ignore ایران فارسیا
       label: 'فارسی (ایران)',
       direction: 'rtl',
       htmlLang: 'fa-IR',
+      calendar: 'gregory',
+    });
+    expect(getDefaultLocaleConfig('en-US-u-ca-buddhist')).toEqual({
+      label: 'American English',
+      direction: 'ltr',
+      htmlLang: 'en-US-u-ca-buddhist',
+      calendar: 'buddhist',
     });
   });
 });
@@ -145,7 +159,12 @@ describe('loadI18n', () => {
       locales: ['en', 'fr', 'de'],
       currentLocale: 'de',
       localeConfigs: {
-        fr: {label: 'Français', direction: 'ltr', htmlLang: 'fr'},
+        fr: {
+          label: 'Français',
+          direction: 'ltr',
+          htmlLang: 'fr',
+          calendar: 'gregory',
+        },
         en: getDefaultLocaleConfig('en'),
         de: getDefaultLocaleConfig('de'),
       },
@@ -164,87 +183,5 @@ describe('loadI18n', () => {
     expect(consoleSpy.mock.calls[0][0]).toMatch(
       /The locale .*it.* was not found in your site configuration/,
     );
-  });
-});
-
-describe('localizePath', () => {
-  it('localizes url path with current locale', () => {
-    expect(
-      localizePath({
-        pathType: 'url',
-        path: '/baseUrl',
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-          currentLocale: 'fr',
-          localeConfigs: {},
-        },
-        options: {localizePath: true},
-      }),
-    ).toBe('/baseUrl/fr/');
-  });
-
-  it('localizes fs path with current locale', () => {
-    expect(
-      localizePath({
-        pathType: 'fs',
-        path: '/baseFsPath',
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-          currentLocale: 'fr',
-          localeConfigs: {},
-        },
-        options: {localizePath: true},
-      }),
-    ).toBe(`${path.sep}baseFsPath${path.sep}fr`);
-  });
-
-  it('localizes path for default locale, if requested', () => {
-    expect(
-      localizePath({
-        pathType: 'url',
-        path: '/baseUrl/',
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-          currentLocale: 'en',
-          localeConfigs: {},
-        },
-        options: {localizePath: true},
-      }),
-    ).toBe('/baseUrl/en/');
-  });
-
-  it('does not localize path for default locale by default', () => {
-    expect(
-      localizePath({
-        pathType: 'url',
-        path: '/baseUrl/',
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-          currentLocale: 'en',
-          localeConfigs: {},
-        },
-        // options: {localizePath: true},
-      }),
-    ).toBe('/baseUrl/');
-  });
-
-  it('localizes path for non-default locale by default', () => {
-    expect(
-      localizePath({
-        pathType: 'url',
-        path: '/baseUrl/',
-        i18n: {
-          defaultLocale: 'en',
-          locales: ['en', 'fr'],
-          currentLocale: 'en',
-          localeConfigs: {},
-        },
-        // options: {localizePath: true},
-      }),
-    ).toBe('/baseUrl/');
   });
 });

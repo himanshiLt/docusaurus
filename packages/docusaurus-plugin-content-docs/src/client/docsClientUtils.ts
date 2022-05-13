@@ -11,11 +11,11 @@ import type {
   GlobalPluginData,
   GlobalVersion,
   GlobalDoc,
-  GetActivePluginOptions,
   ActivePlugin,
   ActiveDocContext,
   DocVersionSuggestions,
 } from '@docusaurus/plugin-content-docs/client';
+import type {UseDataOptions} from '@docusaurus/types';
 
 // This code is not part of the api surface, not in ./theme on purpose
 
@@ -23,11 +23,11 @@ import type {
 // ie the docs of that plugin are currently browsed
 // it is useful to support multiple docs plugin instances
 export function getActivePlugin(
-  allPluginDatas: Record<string, GlobalPluginData>,
+  allPluginData: {[pluginId: string]: GlobalPluginData},
   pathname: string,
-  options: GetActivePluginOptions = {},
+  options: UseDataOptions = {},
 ): ActivePlugin | undefined {
-  const activeEntry = Object.entries(allPluginDatas)
+  const activeEntry = Object.entries(allPluginData)
     // Route sorting: '/android/foo' should match '/android' instead of '/'
     .sort((a, b) => b[1].path.localeCompare(a[1].path))
     .find(
@@ -46,7 +46,7 @@ export function getActivePlugin(
   if (!activePlugin && options.failfast) {
     throw new Error(
       `Can't find active docs plugin for "${pathname}" pathname, while it was expected to be found. Maybe you tried to use a docs feature that can only be used on a docs-related page? Existing docs plugin paths are: ${Object.values(
-        allPluginDatas,
+        allPluginData,
       )
         .map((plugin) => plugin.path)
         .join(', ')}`,
@@ -59,12 +59,10 @@ export function getActivePlugin(
 export const getLatestVersion = (data: GlobalPluginData): GlobalVersion =>
   data.versions.find((version) => version.isLast)!;
 
-// Note: return undefined on doc-unrelated pages,
-// because there's no version currently considered as active
-export const getActiveVersion = (
+export function getActiveVersion(
   data: GlobalPluginData,
   pathname: string,
-): GlobalVersion | undefined => {
+): GlobalVersion | undefined {
   const lastVersion = getLatestVersion(data);
   // Last version is a route like /docs/*,
   // we need to match it last or it would match /docs/version-1.0/* as well
@@ -80,12 +78,12 @@ export const getActiveVersion = (
         strict: false,
       }),
   );
-};
+}
 
-export const getActiveDocContext = (
+export function getActiveDocContext(
   data: GlobalPluginData,
   pathname: string,
-): ActiveDocContext => {
+): ActiveDocContext {
   const activeVersion = getActiveVersion(data, pathname);
   const activeDoc = activeVersion?.docs.find(
     (doc) =>
@@ -119,15 +117,15 @@ export const getActiveDocContext = (
     activeDoc,
     alternateDocVersions: alternateVersionDocs,
   };
-};
+}
 
-export const getDocVersionSuggestions = (
+export function getDocVersionSuggestions(
   data: GlobalPluginData,
   pathname: string,
-): DocVersionSuggestions => {
+): DocVersionSuggestions {
   const latestVersion = getLatestVersion(data);
   const activeDocContext = getActiveDocContext(data, pathname);
   const latestDocSuggestion: GlobalDoc | undefined =
     activeDocContext?.alternateDocVersions[latestVersion.name];
   return {latestDocSuggestion, latestVersionSuggestion: latestVersion};
-};
+}

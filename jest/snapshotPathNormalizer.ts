@@ -10,6 +10,7 @@
 
 import _ from 'lodash';
 import {escapePath} from '@docusaurus/utils';
+import stripAnsi from 'strip-ansi';
 import {version} from '@docusaurus/core/package.json';
 import os from 'os';
 import path from 'path';
@@ -31,7 +32,7 @@ export function print(
     });
     return serialize(error);
   } else if (val && typeof val === 'object') {
-    const normalizedValue = _.cloneDeep(val) as Record<string, unknown>;
+    const normalizedValue = _.cloneDeep(val) as {[key: string]: unknown};
 
     Object.keys(normalizedValue).forEach((key) => {
       normalizedValue[key] = normalizePaths(normalizedValue[key]);
@@ -46,7 +47,7 @@ export function test(val: unknown): boolean {
     (typeof val === 'object' &&
       val &&
       Object.keys(val).some((key) =>
-        shouldUpdate((val as Record<string, unknown>)[key]),
+        shouldUpdate((val as {[key: string]: unknown})[key]),
       )) ||
     // val.message is non-enumerable in an error
     (val instanceof Error && shouldUpdate(val.message)) ||
@@ -76,6 +77,7 @@ function normalizePaths<T>(value: T): T {
   const homeRealRelativeToTemp = path.relative(tempDir, homeDirReal);
 
   const runner: ((val: string) => string)[] = [
+    (val) => (val.includes('keepAnsi') ? val : stripAnsi(val)),
     // Replace process.cwd with <PROJECT_ROOT>
     (val) => val.split(cwdReal).join('<PROJECT_ROOT>'),
     (val) => val.split(cwd).join('<PROJECT_ROOT>'),
@@ -88,7 +90,7 @@ function normalizePaths<T>(value: T): T {
     (val) => val.split(homeDirReal).join('<HOME_DIR>'),
     (val) => val.split(homeDir).join('<HOME_DIR>'),
 
-    // handle HOME_DIR nested inside TEMP_DIR
+    // Handle HOME_DIR nested inside TEMP_DIR
     (val) =>
       val
         .split(`<TEMP_DIR>${path.sep + homeRelativeToTemp}`)
@@ -96,7 +98,7 @@ function normalizePaths<T>(value: T): T {
     (val) =>
       val
         .split(`<TEMP_DIR>${path.sep + homeRelativeToTempReal}`)
-        .join('<HOME_DIR>'), // untested
+        .join('<HOME_DIR>'),
     (val) =>
       val
         .split(`<TEMP_DIR>${path.sep + homeRealRelativeToTempReal}`)
@@ -104,7 +106,7 @@ function normalizePaths<T>(value: T): T {
     (val) =>
       val
         .split(`<TEMP_DIR>${path.sep + homeRealRelativeToTemp}`)
-        .join('<HOME_DIR>'), // untested
+        .join('<HOME_DIR>'),
 
     // Replace the Docusaurus version with a stub
     (val) => val.split(version).join('<CURRENT_VERSION>'),
@@ -132,7 +134,6 @@ function normalizePaths<T>(value: T): T {
 }
 
 function shouldUpdate(value: unknown) {
-  // return true if value is different from normalized value
   return typeof value === 'string' && normalizePaths(value) !== value;
 }
 
@@ -141,7 +142,7 @@ function getRealPath(pathname: string) {
     // eslint-disable-next-line no-restricted-properties
     const realPath = fs.realpathSync(pathname);
     return realPath;
-  } catch (error) {
+  } catch (err) {
     return pathname;
   }
 }

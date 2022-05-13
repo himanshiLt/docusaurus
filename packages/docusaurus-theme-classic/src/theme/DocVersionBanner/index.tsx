@@ -70,10 +70,9 @@ function UnmaintainedVersionLabel({
   );
 }
 
-const BannerLabelComponents: Record<
-  VersionBanner,
-  ComponentType<BannerLabelComponentProps>
-> = {
+const BannerLabelComponents: {
+  [banner in VersionBanner]: ComponentType<BannerLabelComponentProps>;
+} = {
   unreleased: UnreleasedVersionLabel,
   unmaintained: UnmaintainedVersionLabel,
 };
@@ -137,8 +136,8 @@ function DocVersionBannerEnabled({
   const {latestDocSuggestion, latestVersionSuggestion} =
     useDocVersionSuggestions(pluginId);
 
-  // try to link to same doc in latest version (not always possible)
-  // fallback to main doc of latest version
+  // Try to link to same doc in latest version (not always possible), falling
+  // back to main doc of latest version
   const latestVersionSuggestedDoc =
     latestDocSuggestion ?? getVersionMainDoc(latestVersionSuggestion);
 

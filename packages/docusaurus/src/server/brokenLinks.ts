@@ -53,7 +53,7 @@ function getPageBrokenLinks({
       // component, but we load route components with string paths.
       // We don't actually access component here, so it's fine.
       .map((l) => matchRoutes(routes, l))
-      .reduce((prev, cur) => prev.concat(cur));
+      .flat();
     return matchedRoutes.length === 0;
   }
 
@@ -75,22 +75,21 @@ function getAllBrokenLinks({
   allCollectedLinks,
   routes,
 }: {
-  allCollectedLinks: Record<string, string[]>;
+  allCollectedLinks: {[location: string]: string[]};
   routes: RouteConfig[];
-}): Record<string, BrokenLink[]> {
+}): {[location: string]: BrokenLink[]} {
   const filteredRoutes = filterIntermediateRoutes(routes);
 
   const allBrokenLinks = _.mapValues(allCollectedLinks, (pageLinks, pagePath) =>
     getPageBrokenLinks({pageLinks, pagePath, routes: filteredRoutes}),
   );
 
-  // remove pages without any broken link
   return _.pickBy(allBrokenLinks, (brokenLinks) => brokenLinks.length > 0);
 }
 
-function getBrokenLinksErrorMessage(
-  allBrokenLinks: Record<string, BrokenLink[]>,
-): string | undefined {
+function getBrokenLinksErrorMessage(allBrokenLinks: {
+  [location: string]: BrokenLink[];
+}): string | undefined {
   if (Object.keys(allBrokenLinks).length === 0) {
     return undefined;
   }
@@ -177,8 +176,8 @@ async function filterExistingFileLinks({
 }: {
   baseUrl: string;
   outDir: string;
-  allCollectedLinks: Record<string, string[]>;
-}): Promise<Record<string, string[]>> {
+  allCollectedLinks: {[location: string]: string[]};
+}): Promise<{[location: string]: string[]}> {
   async function linkFileExists(link: string) {
     // /baseUrl/javadoc/ -> /outDir/javadoc
     const baseFilePath = onlyPathname(
@@ -222,7 +221,7 @@ export async function handleBrokenLinks({
   baseUrl,
   outDir,
 }: {
-  allCollectedLinks: Record<string, string[]>;
+  allCollectedLinks: {[location: string]: string[]};
   onBrokenLinks: ReportingSeverity;
   routes: RouteConfig[];
   baseUrl: string;

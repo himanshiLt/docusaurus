@@ -37,6 +37,7 @@ describe('normalizeConfig', () => {
       organizationName: 'facebook',
       projectName: 'docusaurus',
       githubHost: 'github.com',
+      githubPort: '8000',
       customFields: {
         myCustomField: '42',
       },
@@ -173,6 +174,7 @@ describe('normalizeConfig', () => {
       'should accept [function, object] for plugin',
       [[() => {}, {it: 'should work'}]],
     ],
+    ['should accept false/null for plugin', [false, null, 'classic']],
   ])(`%s for the input of: %p`, (_message, plugins) => {
     expect(() => {
       normalizeConfig({
@@ -211,6 +213,7 @@ describe('normalizeConfig', () => {
       'should accept [function, object] for theme',
       [[function theme() {}, {it: 'should work'}]],
     ],
+    ['should accept false/null for themes', [false, null, 'classic']],
   ])(`%s for the input of: %p`, (_message, themes) => {
     expect(() => {
       normalizeConfig({
@@ -224,7 +227,10 @@ describe('normalizeConfig', () => {
       normalizeConfig({
         themes: {},
       });
-    }).toThrowErrorMatchingSnapshot();
+    }).toThrowErrorMatchingInlineSnapshot(`
+      ""themes" must be an array
+      "
+    `);
   });
 
   it('throws error if presets is not array', () => {
@@ -232,7 +238,31 @@ describe('normalizeConfig', () => {
       normalizeConfig({
         presets: {},
       });
-    }).toThrowErrorMatchingSnapshot();
+    }).toThrowErrorMatchingInlineSnapshot(`
+      ""presets" must be an array
+      "
+    `);
+  });
+
+  it('throws error if presets looks invalid', () => {
+    expect(() => {
+      normalizeConfig({
+        presets: [() => {}],
+      });
+    }).toThrowErrorMatchingInlineSnapshot(`
+      ""presets[0]" does not look like a valid preset config. A preset config entry should be one of:
+      - A tuple of [presetName, options], like \`["classic", { blog: false }]\`, or
+      - A simple string, like \`"classic"\`
+      "
+    `);
+  });
+
+  it('accepts presets as false / null', () => {
+    expect(() => {
+      normalizeConfig({
+        presets: [false, null, 'classic'],
+      });
+    }).not.toThrow();
   });
 
   it("throws error if scripts doesn't have src", () => {
@@ -240,7 +270,10 @@ describe('normalizeConfig', () => {
       normalizeConfig({
         scripts: ['https://some.com', {}],
       });
-    }).toThrowErrorMatchingSnapshot();
+    }).toThrowErrorMatchingInlineSnapshot(`
+      ""scripts[1]" is invalid. A script must be a plain string (the src), or an object with at least a "src" property.
+      "
+    `);
   });
 
   it("throws error if css doesn't have href", () => {
@@ -248,19 +281,21 @@ describe('normalizeConfig', () => {
       normalizeConfig({
         stylesheets: ['https://somescript.com', {type: 'text/css'}],
       });
-    }).toThrowErrorMatchingSnapshot();
+    }).toThrowErrorMatchingInlineSnapshot(`
+      ""stylesheets[1]" is invalid. A stylesheet must be a plain string (the href), or an object with at least a "href" property.
+      "
+    `);
   });
 
   it('throws error for required fields', () => {
-    expect(
-      () =>
-        validateConfig({
-          invalidField: true,
-          presets: {},
-          stylesheets: {},
-          themes: {},
-          scripts: {},
-        } as unknown as DocusaurusConfig), // to fields not in the type
+    expect(() =>
+      validateConfig({
+        invalidField: true,
+        presets: {},
+        stylesheets: {},
+        themes: {},
+        scripts: {},
+      }),
     ).toThrowErrorMatchingSnapshot();
   });
 });
@@ -283,7 +318,7 @@ describe('config warnings', () => {
     expect(warning).toBeDefined();
     expect(warning.details).toHaveLength(1);
     expect(warning.details[0].message).toMatchInlineSnapshot(
-      `"Docusaurus config validation warning. Field \\"url\\": the url is not supposed to contain a sub-path like '/someSubpath', please use the baseUrl field for sub-paths"`,
+      `"Docusaurus config validation warning. Field "url": the url is not supposed to contain a sub-path like '/someSubpath', please use the baseUrl field for sub-paths"`,
     );
   });
 });

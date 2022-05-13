@@ -13,17 +13,24 @@ import type {Props} from '@docusaurus/types';
 import {createBaseConfig} from './base';
 import WaitPlugin from './plugins/WaitPlugin';
 import LogPlugin from './plugins/LogPlugin';
-import {NODE_MAJOR_VERSION, NODE_MINOR_VERSION} from '@docusaurus/utils';
+import {
+  NODE_MAJOR_VERSION,
+  NODE_MINOR_VERSION,
+  DOCUSAURUS_VERSION,
+} from '@docusaurus/utils';
+import ssrDefaultTemplate from './templates/ssr.html.template';
 
 // Forked for Docusaurus: https://github.com/slorber/static-site-generator-webpack-plugin
-import StaticSiteGeneratorPlugin from '@slorber/static-site-generator-webpack-plugin';
+import StaticSiteGeneratorPlugin, {
+  type Locals,
+} from '@slorber/static-site-generator-webpack-plugin';
 
 export default async function createServerConfig({
   props,
-  onLinksCollected = () => {},
-}: {
+  onLinksCollected,
+  onHeadTagsCollected,
+}: Pick<Locals, 'onLinksCollected' | 'onHeadTagsCollected'> & {
   props: Props;
-  onLinksCollected?: (staticPagePath: string, links: string[]) => void;
 }): Promise<Configuration> {
   const {
     baseUrl,
@@ -32,12 +39,11 @@ export default async function createServerConfig({
     headTags,
     preBodyTags,
     postBodyTags,
-    ssrTemplate,
-    siteConfig: {noIndex, trailingSlash},
+    siteConfig: {noIndex, trailingSlash, ssrTemplate},
   } = props;
   const config = await createBaseConfig(props, true);
 
-  const routesLocation: Record<string, string> = {};
+  const routesLocation: {[filePath: string]: string} = {};
   // Array of paths to be rendered. Relative to output directory
   const ssgPaths = routesPaths.map((str) => {
     const ssgPath =
@@ -73,8 +79,10 @@ export default async function createServerConfig({
           preBodyTags,
           postBodyTags,
           onLinksCollected,
-          ssrTemplate,
+          onHeadTagsCollected,
+          ssrTemplate: ssrTemplate ?? ssrDefaultTemplate,
           noIndex,
+          DOCUSAURUS_VERSION,
         },
         paths: ssgPaths,
         preferFoldersOutput: trailingSlash,

@@ -30,7 +30,7 @@ export default function getSwizzleConfig(): SwizzleConfig {
       },
       DocSidebar: {
         actions: {
-          eject: 'unsafe', // too much technical code in sidebar, not very safe atm
+          eject: 'unsafe', // Too much technical code in sidebar, not very safe atm
           wrap: 'safe',
         },
         description: 'The sidebar component on docs pages',
@@ -136,6 +136,68 @@ export default function getSwizzleConfig(): SwizzleConfig {
         description:
           'The MDX components to use for rendering MDX files. Meant to be ejected.',
       },
+      'MDXComponents/A': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description:
+          'The component used to render <a> tags and Markdown links in MDX',
+      },
+      'MDXComponents/Code': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description:
+          'The component used to render <code> tags and Markdown code blocks in MDX',
+      },
+      'MDXComponents/Details': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description: 'The component used to render <details> tags in MDX',
+      },
+      'MDXComponents/Head': {
+        actions: {
+          eject: 'forbidden',
+          wrap: 'forbidden',
+        },
+        description:
+          'Technical component used to assign metadata (generally for SEO purpose) to the current MDX document',
+      },
+      'MDXComponents/Heading': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description:
+          'The component used to render heading tags (<h1>, <h2>...) and Markdown headings in MDX',
+      },
+      'MDXComponents/Img': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description:
+          'The component used to render <img> tags and Markdown images in MDX',
+      },
+      'MDXComponents/Pre': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description: 'The component used to render <pre> tags in MDX',
+      },
+      'MDXComponents/Ul': {
+        actions: {
+          eject: 'safe',
+          wrap: 'safe',
+        },
+        description:
+          'The component used to render <ul> tags and Markdown unordered lists in MDX',
+      },
       MDXContent: {
         actions: {
           eject: 'safe',
@@ -143,6 +205,14 @@ export default function getSwizzleConfig(): SwizzleConfig {
         },
         description:
           'A component wrapping all MDX content and providing the MDXComponents to the MDX context',
+      },
+      'NavbarItem/ComponentTypes': {
+        actions: {
+          eject: 'safe',
+          wrap: 'forbidden',
+        },
+        description:
+          'The Navbar item components mapping. Can be ejected to add custom navbar item types. See https://github.com/facebook/docusaurus/issues/7227.',
       },
       // TODO should probably not even appear here
       'NavbarItem/utils': {
@@ -172,7 +242,7 @@ export default function getSwizzleConfig(): SwizzleConfig {
       'prism-include-languages': {
         actions: {
           eject: 'safe',
-          wrap: 'forbidden', // not a component!
+          wrap: 'forbidden', // Not a component!
         },
         description:
           'The Prism languages to include for code block syntax highlighting. Meant to be ejected.',

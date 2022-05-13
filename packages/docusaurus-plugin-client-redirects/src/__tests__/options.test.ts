@@ -7,7 +7,7 @@
 
 import {validateOptions, DEFAULT_OPTIONS} from '../options';
 import {normalizePluginOptions} from '@docusaurus/utils-validation';
-import type {Options} from '@docusaurus/plugin-client-redirects';
+import type {Options} from '../options';
 
 function testValidate(options: Options) {
   return validateOptions({validate: normalizePluginOptions, options});
@@ -15,11 +15,14 @@ function testValidate(options: Options) {
 
 describe('normalizePluginOptions', () => {
   it('returns default options for undefined user options', () => {
-    expect(testValidate(undefined)).toEqual(DEFAULT_OPTIONS);
+    expect(testValidate(undefined)).toEqual({
+      ...DEFAULT_OPTIONS,
+      id: 'default',
+    });
   });
 
   it('returns default options for empty user options', () => {
-    expect(testValidate(undefined)).toEqual(DEFAULT_OPTIONS);
+    expect(testValidate({})).toEqual({...DEFAULT_OPTIONS, id: 'default'});
   });
 
   it('overrides one default options with valid user options', () => {

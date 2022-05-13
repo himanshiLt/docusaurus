@@ -17,18 +17,24 @@ import evalSourceMapMiddleware from 'react-dev-utils/evalSourceMapMiddleware';
 import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
 import merge from 'webpack-merge';
-import {load} from '../server';
-import type {StartCLIOptions} from '@docusaurus/types';
+import {load, type LoadContextOptions} from '../server';
 import createClientConfig from '../webpack/client';
 import {
   applyConfigureWebpack,
   applyConfigurePostCss,
   getHttpsConfig,
 } from '../webpack/utils';
-import {getCLIOptionHost, getCLIOptionPort} from './commandUtils';
+import {getHostPort, type HostPortOptions} from '../server/getHostPort';
 import {getTranslationsLocaleDirPath} from '../server/translations/translations';
 
-export default async function start(
+export type StartCLIOptions = HostPortOptions &
+  Pick<LoadContextOptions, 'locale' | 'config'> & {
+    hotOnly?: boolean;
+    open?: boolean;
+    poll?: boolean | number;
+  };
+
+export async function start(
   siteDir: string,
   cliOptions: Partial<StartCLIOptions>,
 ): Promise<void> {
@@ -37,10 +43,11 @@ export default async function start(
   logger.info('Starting the development server...');
 
   function loadSite() {
-    return load(siteDir, {
-      customConfigFilePath: cliOptions.config,
+    return load({
+      siteDir,
+      config: cliOptions.config,
       locale: cliOptions.locale,
-      localizePath: undefined, // should this be configurable?
+      localizePath: undefined, // Should this be configurable?
     });
   }
 
@@ -49,8 +56,7 @@ export default async function start(
 
   const protocol: string = process.env.HTTPS === 'true' ? 'https' : 'http';
 
-  const host: string = getCLIOptionHost(cliOptions.host);
-  const port: number | null = await getCLIOptionPort(cliOptions.port, host);
+  const {host, port} = await getHostPort(cliOptions);
 
   if (port === null) {
     process.exit();
@@ -60,7 +66,7 @@ export default async function start(
   const urls = prepareUrls(protocol, host, port);
   const openUrl = normalizeUrl([urls.localUrlForBrowser, baseUrl]);
 
-  logger.success`Docusaurus website is running at path=${openUrl}.`;
+  logger.success`Docusaurus website is running at url=${openUrl}.`;
 
   // Reload files processing.
   const reload = _.debounce(() => {
@@ -68,7 +74,7 @@ export default async function start(
       .then(({baseUrl: newBaseUrl}) => {
         const newOpenUrl = normalizeUrl([urls.localUrlForBrowser, newBaseUrl]);
         if (newOpenUrl !== openUrl) {
-          logger.success`Docusaurus website is running at path=${newOpenUrl}.`;
+          logger.success`Docusaurus website is running at url=${newOpenUrl}.`;
         }
       })
       .catch((err) => {
@@ -116,6 +122,10 @@ export default async function start(
   );
 
   let config: webpack.Configuration = merge(await createClientConfig(props), {
+    watchOptions: {
+      ignored: /node_modules\/(?!@docusaurus)/,
+      poll: cliOptions.poll,
+    },
     infrastructureLogging: {
       // Reduce log verbosity, see https://github.com/facebook/docusaurus/pull/5420#issuecomment-906613105
       level: 'warn',

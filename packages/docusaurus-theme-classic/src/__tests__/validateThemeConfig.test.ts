@@ -12,14 +12,14 @@ import {normalizeThemeConfig} from '@docusaurus/utils-validation';
 import theme from 'prism-react-renderer/themes/github';
 import darkTheme from 'prism-react-renderer/themes/dracula';
 
-function testValidateThemeConfig(partialThemeConfig: Record<string, unknown>) {
+function testValidateThemeConfig(partialThemeConfig: {[key: string]: unknown}) {
   return normalizeThemeConfig(ThemeConfigSchema, {
     ...DEFAULT_CONFIG,
     ...partialThemeConfig,
   });
 }
 
-function testOk(partialThemeConfig: Record<string, unknown>) {
+function testOk(partialThemeConfig: {[key: string]: unknown}) {
   expect(
     testValidateThemeConfig({...DEFAULT_CONFIG, ...partialThemeConfig}),
   ).toEqual({
@@ -36,6 +36,20 @@ describe('themeConfig', () => {
         darkTheme,
         defaultLanguage: 'javascript',
         additionalLanguages: ['kotlin', 'java'],
+        magicComments: [
+          {
+            className: 'theme-code-block-highlighted-line',
+            line: 'highlight-next-line',
+            block: {start: 'highlight-start', end: 'highlight-end'},
+          },
+        ],
+      },
+      docs: {
+        versionPersistence: 'localStorage',
+        sidebar: {
+          hideable: true,
+          autoCollapseCategories: false,
+        },
       },
       announcementBar: {
         id: 'supports',
@@ -101,6 +115,19 @@ describe('themeConfig', () => {
     });
   });
 
+  it('rejects outdated sidebar options', () => {
+    expect(() =>
+      testValidateThemeConfig({hideableSidebar: true}),
+    ).toThrowErrorMatchingInlineSnapshot(
+      `"themeConfig.hideableSidebar has been moved to themeConfig.docs.sidebar.hideable."`,
+    );
+    expect(() =>
+      testValidateThemeConfig({autoCollapseSidebarCategories: true}),
+    ).toThrowErrorMatchingInlineSnapshot(
+      `"themeConfig.autoCollapseSidebarCategories has been moved to themeConfig.docs.sidebar.autoCollapseCategories."`,
+    );
+  });
+
   it('allows possible types of navbar items', () => {
     const config = {
       navbar: {
@@ -112,10 +139,24 @@ describe('themeConfig', () => {
             docId: 'intro',
             label: 'Introduction',
           },
+          // Doc link with HTML as label
+          {
+            type: 'doc',
+            position: 'left',
+            docId: 'intro',
+            html: '<b>Introduction</b>',
+          },
           // Regular link
           {
             to: '/guide/',
             label: 'Guide',
+            position: 'left',
+            activeBaseRegex: '/guide/',
+          },
+          // Regular link with HTML as label
+          {
+            to: '/guide/',
+            html: '<b>Guide</b>',
             position: 'left',
             activeBaseRegex: '/guide/',
           },
@@ -136,16 +177,26 @@ describe('themeConfig', () => {
               },
             ],
           },
-          // Dropdown with name
+          // HTML-only
+          {
+            type: 'html',
+            position: 'right',
+            value: '<button>Give feedback</button>',
+          },
+          // Dropdown with label as HTML
           {
             type: 'dropdown',
-            label: 'Tools',
+            label: 'Tools <sup>new</sup>',
             position: 'left',
             items: [
               {
+                type: 'html',
+                value: '<b>Supported package managers</b>',
+              },
+              {
                 type: 'doc',
                 docId: 'npm',
-                label: 'NPM',
+                label: 'npm',
               },
               {
                 to: '/yarn',
@@ -168,6 +219,10 @@ describe('themeConfig', () => {
             ],
             dropdownItemsAfter: [
               {
+                type: 'html',
+                value: '<hr/>',
+              },
+              {
                 to: '/versions',
                 label: 'All versions',
                 className: 'all_vers',
@@ -186,6 +241,44 @@ describe('themeConfig', () => {
             type: 'docsVersion',
             position: 'left',
             label: 'Current version',
+          },
+        ],
+      },
+    };
+    expect(testValidateThemeConfig(config)).toEqual({
+      ...DEFAULT_CONFIG,
+      navbar: {
+        ...DEFAULT_CONFIG.navbar,
+        ...config.navbar,
+      },
+    });
+  });
+
+  it('accept "custom-" prefixed custom navbar item type', () => {
+    const config = {
+      navbar: {
+        items: [
+          {
+            type: 'custom-x',
+            position: 'left',
+            xyz: 42,
+          },
+          {
+            label: 'Dropdown with custom item',
+            position: 'right',
+            items: [
+              {
+                label: 'Facebook',
+                href: 'https://.facebook.com/',
+                target: '_self',
+              },
+              {
+                type: 'custom-y',
+                any: new Date(),
+                prop: 42,
+                isAccepted: true,
+              },
+            ],
           },
         ],
       },
@@ -281,7 +374,7 @@ describe('themeConfig', () => {
     expect(() =>
       testValidateThemeConfig(config),
     ).toThrowErrorMatchingInlineSnapshot(
-      `"\\"navbar.items[0].items[0].position\\" is not allowed"`,
+      `""navbar.items[0].items[0].position" is not allowed"`,
     );
   });
 
@@ -301,7 +394,7 @@ describe('themeConfig', () => {
     expect(() =>
       testValidateThemeConfig(config),
     ).toThrowErrorMatchingInlineSnapshot(
-      `"One and only one between \\"to\\" and \\"href\\" should be provided"`,
+      `"One and only one between "to" and "href" should be provided"`,
     );
   });
 
@@ -463,15 +556,72 @@ describe('themeConfig', () => {
     });
   });
 
-  it('accepts valid prism config', () => {
-    const prismConfig = {
-      prism: {
-        additionalLanguages: ['kotlin', 'java'],
-      },
-    };
-    expect(testValidateThemeConfig(prismConfig)).toEqual({
-      ...DEFAULT_CONFIG,
-      ...prismConfig,
+  describe('prism config', () => {
+    it('accepts a range of magic comments', () => {
+      const prismConfig = {
+        prism: {
+          additionalLanguages: ['kotlin', 'java'],
+          theme: darkTheme,
+          magicComments: [],
+        },
+      };
+      expect(testValidateThemeConfig(prismConfig)).toEqual({
+        ...DEFAULT_CONFIG,
+        ...prismConfig,
+      });
+      const prismConfig2 = {
+        prism: {
+          additionalLanguages: [],
+          theme: darkTheme,
+          magicComments: [
+            {
+              className: 'a',
+              line: 'a-next-line',
+            },
+          ],
+        },
+      };
+      expect(testValidateThemeConfig(prismConfig2)).toEqual({
+        ...DEFAULT_CONFIG,
+        ...prismConfig2,
+      });
+      const prismConfig3 = {
+        prism: {
+          additionalLanguages: [],
+          theme: darkTheme,
+          magicComments: [
+            {
+              className: 'a',
+              block: {start: 'a-start', end: 'a-end'},
+            },
+          ],
+        },
+      };
+      expect(testValidateThemeConfig(prismConfig3)).toEqual({
+        ...DEFAULT_CONFIG,
+        ...prismConfig3,
+      });
+    });
+
+    it('rejects incomplete magic comments', () => {
+      expect(() =>
+        testValidateThemeConfig({
+          prism: {
+            magicComments: [{className: 'a'}],
+          },
+        }),
+      ).toThrowErrorMatchingInlineSnapshot(
+        `""prism.magicComments[0]" must contain at least one of [line, block]"`,
+      );
+      expect(() =>
+        testValidateThemeConfig({
+          prism: {
+            magicComments: [{className: 'a', block: {start: 'start'}}],
+          },
+        }),
+      ).toThrowErrorMatchingInlineSnapshot(
+        `""prism.magicComments[0].block.end" is required"`,
+      );
     });
   });
 
@@ -500,7 +650,7 @@ describe('themeConfig', () => {
           customCss: 42,
         }),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"customCss\\" must be one of [array, string]"`,
+        `""customCss" must be one of [array, string]"`,
       );
     });
   });
@@ -610,7 +760,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.minHeadingLevel\\" must be an integer"`,
+        `""tableOfContents.minHeadingLevel" must be an integer"`,
       );
     });
 
@@ -621,7 +771,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.maxHeadingLevel\\" must be an integer"`,
+        `""tableOfContents.maxHeadingLevel" must be an integer"`,
       );
     });
 
@@ -632,7 +782,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.minHeadingLevel\\" must be greater than or equal to 2"`,
+        `""tableOfContents.minHeadingLevel" must be greater than or equal to 2"`,
       );
     });
 
@@ -643,7 +793,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.minHeadingLevel\\" must be less than or equal to ref:maxHeadingLevel"`,
+        `""tableOfContents.minHeadingLevel" must be less than or equal to ref:maxHeadingLevel"`,
       );
     });
 
@@ -654,7 +804,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.maxHeadingLevel\\" must be greater than or equal to 2"`,
+        `""tableOfContents.maxHeadingLevel" must be greater than or equal to 2"`,
       );
     });
 
@@ -665,7 +815,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.maxHeadingLevel\\" must be less than or equal to 6"`,
+        `""tableOfContents.maxHeadingLevel" must be less than or equal to 6"`,
       );
     });
 
@@ -677,7 +827,7 @@ describe('themeConfig', () => {
       expect(() =>
         testValidateThemeConfig({tableOfContents}),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"\\"tableOfContents.minHeadingLevel\\" must be less than or equal to ref:maxHeadingLevel"`,
+        `""tableOfContents.minHeadingLevel" must be less than or equal to ref:maxHeadingLevel"`,
       );
     });
   });

@@ -12,7 +12,7 @@
 import React from 'react';
 import renderer from 'react-test-renderer';
 import BrowserOnly from '../BrowserOnly';
-import {Context} from '../browserContext';
+import {Context} from '../../browserContext';
 
 describe('<BrowserOnly>', () => {
   const originalEnv = process.env;
@@ -40,7 +40,7 @@ describe('<BrowserOnly>', () => {
         )
         .toJSON(),
     ).toThrowErrorMatchingInlineSnapshot(`
-      "Docusaurus error: The children of <BrowserOnly> must be a \\"render function\\", e.g. <BrowserOnly>{() => <span>{window.location.href}</span>}</BrowserOnly>.
+      "Docusaurus error: The children of <BrowserOnly> must be a "render function", e.g. <BrowserOnly>{() => <span>{window.location.href}</span>}</BrowserOnly>.
       Current type: React element"
     `);
   });
@@ -55,7 +55,7 @@ describe('<BrowserOnly>', () => {
         </Context.Provider>,
       );
     }).toThrowErrorMatchingInlineSnapshot(`
-      "Docusaurus error: The children of <BrowserOnly> must be a \\"render function\\", e.g. <BrowserOnly>{() => <span>{window.location.href}</span>}</BrowserOnly>.
+      "Docusaurus error: The children of <BrowserOnly> must be a "render function", e.g. <BrowserOnly>{() => <span>{window.location.href}</span>}</BrowserOnly>.
       Current type: string"
     `);
   });

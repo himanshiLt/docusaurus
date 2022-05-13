@@ -8,6 +8,8 @@
 declare module 'remark-admonitions';
 
 declare module 'react-loadable-ssr-addon-v5-slorber' {
+  import type {WebpackPluginInstance, Compiler} from 'webpack';
+
   type Asset = {
     file: string;
     hash: string;
@@ -17,8 +19,8 @@ declare module 'react-loadable-ssr-addon-v5-slorber' {
 
   export type Manifest = {
     entrypoints: string[];
-    origins: Record<string, number[]>;
-    assets: Array<Record<string, Asset[]>>;
+    origins: {[key: string]: number[]};
+    assets: Array<{[key: string]: Asset[]}>;
   };
 
   export function getBundles(
@@ -26,39 +28,45 @@ declare module 'react-loadable-ssr-addon-v5-slorber' {
     modulesToBeLoaded: string[],
   ): {js: Asset[]; css: Asset[]};
 
-  interface ReactLoadableSSRAddon {
-    new (props: {filename: string});
+  export default class ReactLoadableSSRAddon implements WebpackPluginInstance {
+    constructor(props: {filename: string});
+    apply(compiler: Compiler): void;
   }
-
-  const plugin: ReactLoadableSSRAddon;
-  export default plugin;
 }
 
 declare module '@slorber/static-site-generator-webpack-plugin' {
+  import type {WebpackPluginInstance, Compiler} from 'webpack';
+  import type {HelmetServerState} from 'react-helmet-async';
+
   export type Locals = {
-    routesLocation: Record<string, string>;
+    routesLocation: {[filePath: string]: string};
     generatedFilesDir: string;
     headTags: string;
     preBodyTags: string;
     postBodyTags: string;
     onLinksCollected: (staticPagePath: string, links: string[]) => void;
+    onHeadTagsCollected: (
+      staticPagePath: string,
+      tags: HelmetServerState,
+    ) => void;
     baseUrl: string;
     ssrTemplate: string;
     noIndex: boolean;
+    DOCUSAURUS_VERSION: string;
   };
 
-  interface StaticSiteGeneratorPlugin {
-    new (props: {
+  export default class StaticSiteGeneratorPlugin
+    implements WebpackPluginInstance
+  {
+    constructor(props: {
       entry: string;
       locals: Locals;
       paths: string[];
       preferFoldersOutput?: boolean;
-      globals: Record<string, unknown>;
+      globals: {[key: string]: unknown};
     });
+    apply(compiler: Compiler): void;
   }
-
-  const plugin: StaticSiteGeneratorPlugin;
-  export default plugin;
 }
 
 declare module 'webpack/lib/HotModuleReplacementPlugin' {

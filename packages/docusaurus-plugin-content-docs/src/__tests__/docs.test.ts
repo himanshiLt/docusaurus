@@ -14,26 +14,27 @@ import {
   readDocFile,
   addDocNavigation,
   isCategoryIndex,
+  type DocEnv,
 } from '../docs';
 import {loadSidebars} from '../sidebars';
 import type {Sidebars} from '../sidebars/types';
 import {readVersionsMetadata} from '../versions';
-import type {
-  DocFile,
-  DocMetadataBase,
-  VersionMetadata,
-  DocNavLink,
-} from '../types';
+import type {DocFile} from '../types';
 import type {
   MetadataOptions,
   PluginOptions,
   EditUrlFunction,
+  DocMetadataBase,
+  VersionMetadata,
+  PropNavigationLink,
 } from '@docusaurus/plugin-content-docs';
 import type {LoadContext} from '@docusaurus/types';
 import {DEFAULT_OPTIONS} from '../options';
 import type {Optional} from 'utility-types';
 import {createSlugger, posixPath, DEFAULT_PLUGIN_ID} from '@docusaurus/utils';
 import {createSidebarsUtils} from '../sidebars/utils';
+
+jest.setTimeout(15000);
 
 const fixtureDir = path.join(__dirname, '__fixtures__');
 
@@ -43,7 +44,7 @@ const createFakeDocFile = ({
   markdown = 'some markdown content',
 }: {
   source: string;
-  frontMatter?: Record<string, string>;
+  frontMatter?: {[key: string]: string};
   markdown?: string;
 }): DocFile => {
   const content = `---
@@ -62,46 +63,51 @@ ${markdown}
   };
 };
 
+type TestUtilsArg = {
+  siteDir: string;
+  context: LoadContext;
+  versionMetadata: VersionMetadata;
+  options: MetadataOptions;
+  env?: DocEnv;
+};
+
 function createTestUtils({
   siteDir,
   context,
   versionMetadata,
   options,
-}: {
-  siteDir: string;
-  context: LoadContext;
-  versionMetadata: VersionMetadata;
-  options: MetadataOptions;
-}) {
+  env = 'production',
+}: TestUtilsArg) {
   async function readDoc(docFileSource: string) {
     return readDocFile(versionMetadata, docFileSource, options);
   }
-  function processDocFile(docFile: DocFile) {
+  async function processDocFile(docFileArg: DocFile | string) {
+    const docFile: DocFile =
+      typeof docFileArg === 'string' ? await readDoc(docFileArg) : docFileArg;
+
     return processDocMetadata({
       docFile,
       versionMetadata,
       options,
       context,
+      env,
     });
   }
+
   async function testMeta(
     docFileSource: string,
     expectedMetadata: Optional<
       DocMetadataBase,
-      'source' | 'lastUpdatedBy' | 'lastUpdatedAt' | 'editUrl'
+      'source' | 'lastUpdatedBy' | 'lastUpdatedAt' | 'editUrl' | 'draft'
     >,
   ) {
     const docFile = await readDoc(docFileSource);
-    const metadata = await processDocMetadata({
-      docFile,
-      versionMetadata,
-      context,
-      options,
-    });
+    const metadata = await processDocFile(docFile);
     expect(metadata).toEqual({
       lastUpdatedBy: undefined,
       lastUpdatedAt: undefined,
       editUrl: undefined,
+      draft: false,
       source: path.posix.join(
         '@site',
         posixPath(path.relative(siteDir, versionMetadata.contentPath)),
@@ -118,12 +124,17 @@ function createTestUtils({
       versionMetadata,
       context,
       options,
+      env,
     });
     expect(metadata.permalink).toEqual(expectedPermalink);
   }
 
   async function generateNavigation(docFiles: DocFile[]): Promise<{
-    pagination: {prev?: DocNavLink; next?: DocNavLink; id: string}[];
+    pagination: {
+      prev?: PropNavigationLink;
+      next?: PropNavigationLink;
+      id: string;
+    }[];
     sidebars: Sidebars;
   }> {
     const rawDocs = docFiles.map((docFile) =>
@@ -132,6 +143,7 @@ function createTestUtils({
         versionMetadata,
         context,
         options,
+        env: 'production',
       }),
     );
     const sidebars = await loadSidebars(versionMetadata.sidebarFilePath, {
@@ -139,6 +151,7 @@ function createTestUtils({
         defaultSidebarItemsGenerator({...args}),
       numberPrefixParser: options.numberPrefixParser,
       docs: rawDocs,
+      drafts: [],
       version: versionMetadata,
       sidebarOptions: {
         sidebarCollapsed: false,
@@ -166,7 +179,7 @@ describe('simple site', () => {
     loadSiteOptions: {options: Partial<PluginOptions>} = {options: {}},
   ) {
     const siteDir = path.join(fixtureDir, 'simple-site');
-    const context = await loadContext(siteDir);
+    const context = await loadContext({siteDir});
     const options = {
       id: DEFAULT_PLUGIN_ID,
       ...DEFAULT_OPTIONS,
@@ -177,20 +190,27 @@ describe('simple site', () => {
       options,
     });
     expect(versionsMetadata).toHaveLength(1);
-    const [currentVersion] = versionsMetadata;
+    const currentVersion = versionsMetadata[0]!;
 
-    const defaultTestUtils = createTestUtils({
-      siteDir,
-      context,
-      options,
-      versionMetadata: currentVersion,
-    });
+    function createTestUtilsPartial(args: Partial<TestUtilsArg>) {
+      return createTestUtils({
+        siteDir,
+        context,
+        options,
+        versionMetadata: currentVersion,
+        ...args,
+      });
+    }
+
+    const defaultTestUtils = createTestUtilsPartial({});
+
     return {
       siteDir,
       context,
       options,
       versionsMetadata,
       defaultTestUtils,
+      createTestUtilsPartial,
       currentVersion,
     };
   }
@@ -209,6 +229,7 @@ describe('simple site', () => {
         'rootTryToEscapeSlug.md',
         'headingAsTitle.md',
         'doc with space.md',
+        'doc-draft.md',
         'foo/bar.md',
         'foo/baz.md',
         'slugs/absoluteSlug.md',
@@ -269,13 +290,14 @@ describe('simple site', () => {
   });
 
   it('docs with editUrl', async () => {
-    const {siteDir, context, options, currentVersion} = await loadSite({
-      options: {
-        editUrl: 'https://github.com/facebook/docusaurus/edit/main/website',
-      },
-    });
+    const {siteDir, context, options, currentVersion, createTestUtilsPartial} =
+      await loadSite({
+        options: {
+          editUrl: 'https://github.com/facebook/docusaurus/edit/main/website',
+        },
+      });
 
-    const testUtilsLocal = createTestUtils({
+    const testUtilsLocal = createTestUtilsPartial({
       siteDir,
       context,
       options,
@@ -343,13 +365,14 @@ describe('simple site', () => {
 
     const editUrlFunction: EditUrlFunction = jest.fn(() => hardcodedEditUrl);
 
-    const {siteDir, context, options, currentVersion} = await loadSite({
-      options: {
-        editUrl: editUrlFunction,
-      },
-    });
+    const {siteDir, context, options, currentVersion, createTestUtilsPartial} =
+      await loadSite({
+        options: {
+          editUrl: editUrlFunction,
+        },
+      });
 
-    const testUtilsLocal = createTestUtils({
+    const testUtilsLocal = createTestUtilsPartial({
       siteDir,
       context,
       options,
@@ -400,14 +423,15 @@ describe('simple site', () => {
   });
 
   it('docs with last update time and author', async () => {
-    const {siteDir, context, options, currentVersion} = await loadSite({
-      options: {
-        showLastUpdateAuthor: true,
-        showLastUpdateTime: true,
-      },
-    });
+    const {siteDir, context, options, currentVersion, createTestUtilsPartial} =
+      await loadSite({
+        options: {
+          showLastUpdateAuthor: true,
+          showLastUpdateTime: true,
+        },
+      });
 
-    const testUtilsLocal = createTestUtils({
+    const testUtilsLocal = createTestUtilsPartial({
       siteDir,
       context,
       options,
@@ -432,6 +456,28 @@ describe('simple site', () => {
       formattedLastUpdatedAt: '10/14/2018',
       lastUpdatedBy: 'Author',
       tags: [],
+    });
+  });
+
+  it('docs with draft frontmatter', async () => {
+    const {createTestUtilsPartial} = await loadSite();
+
+    const testUtilsProd = createTestUtilsPartial({
+      env: 'production',
+    });
+    await expect(
+      testUtilsProd.processDocFile('doc-draft.md'),
+    ).resolves.toMatchObject({
+      draft: true,
+    });
+
+    const testUtilsDev = createTestUtilsPartial({
+      env: 'development',
+    });
+    await expect(
+      testUtilsDev.processDocFile('doc-draft.md'),
+    ).resolves.toMatchObject({
+      draft: false,
     });
   });
 
@@ -485,13 +531,13 @@ describe('simple site', () => {
         }),
       ),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Document id \\"Hello/world\\" cannot include slash."`,
+      `"Document id "Hello/world" cannot include slash."`,
     );
   });
 
   it('custom pagination', async () => {
     const {defaultTestUtils, options, versionsMetadata} = await loadSite();
-    const docs = await readVersionDocs(versionsMetadata[0], options);
+    const docs = await readVersionDocs(versionsMetadata[0]!, options);
     await expect(
       defaultTestUtils.generateNavigation(docs),
     ).resolves.toMatchSnapshot();
@@ -499,7 +545,7 @@ describe('simple site', () => {
 
   it('bad pagination', async () => {
     const {defaultTestUtils, options, versionsMetadata} = await loadSite();
-    const docs = await readVersionDocs(versionsMetadata[0], options);
+    const docs = await readVersionDocs(versionsMetadata[0]!, options);
     docs.push(
       createFakeDocFile({
         source: 'bad',
@@ -521,7 +567,8 @@ describe('versioned site', () => {
     },
   ) {
     const siteDir = path.join(fixtureDir, 'versioned-site');
-    const context = await loadContext(siteDir, {
+    const context = await loadContext({
+      siteDir,
       locale: loadSiteOptions.locale,
     });
     const options = {
@@ -534,8 +581,11 @@ describe('versioned site', () => {
       options,
     });
     expect(versionsMetadata).toHaveLength(4);
-    const [currentVersion, version101, version100, versionWithSlugs] =
-      versionsMetadata;
+
+    const currentVersion = versionsMetadata[0]!;
+    const version101 = versionsMetadata[1]!;
+    const version100 = versionsMetadata[2]!;
+    const versionWithSlugs = versionsMetadata[3]!;
 
     const currentVersionTestUtils = createTestUtils({
       siteDir,
@@ -799,7 +849,6 @@ describe('versioned site', () => {
     const {siteDir, context, options, version100} = await loadSite({
       options: {
         editUrl: 'https://github.com/facebook/docusaurus/edit/main/website',
-        // editCurrentVersion: true,
       },
     });
 

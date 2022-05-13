@@ -8,12 +8,12 @@
 import leven from 'leven';
 import _ from 'lodash';
 import logger from '@docusaurus/logger';
+import type {NormalizedPluginConfig} from '../../server/plugins/configs';
 import type {
   InitializedPlugin,
   SwizzleAction,
   SwizzleActionStatus,
 } from '@docusaurus/types';
-import type {NormalizedPluginConfig} from '../../server/plugins/init';
 
 export const SwizzleActions: SwizzleAction[] = ['wrap', 'eject'];
 
@@ -29,10 +29,9 @@ export function actionStatusLabel(status: SwizzleActionStatus): string {
   return _.capitalize(status);
 }
 
-const SwizzleActionStatusColors: Record<
-  SwizzleActionStatus,
-  (str: string) => string
-> = {
+const SwizzleActionStatusColors: {
+  [status in SwizzleActionStatus]: (str: string) => string;
+} = {
   safe: logger.green,
   unsafe: logger.yellow,
   forbidden: logger.red,
@@ -62,7 +61,7 @@ export type SwizzlePlugin = {
 
 export type SwizzleContext = {plugins: SwizzlePlugin[]};
 
-export type SwizzleOptions = {
+export type SwizzleCLIOptions = {
   typescript: boolean;
   danger: boolean;
   list: boolean;
@@ -71,8 +70,8 @@ export type SwizzleOptions = {
 };
 
 export function normalizeOptions(
-  options: Partial<SwizzleOptions>,
-): SwizzleOptions {
+  options: Partial<SwizzleCLIOptions>,
+): SwizzleCLIOptions {
   return {
     typescript: options.typescript ?? false,
     danger: options.danger ?? false,

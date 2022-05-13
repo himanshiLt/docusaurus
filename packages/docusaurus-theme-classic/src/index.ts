@@ -5,7 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import type {LoadContext, Plugin, PostCssOptions} from '@docusaurus/types';
+import path from 'path';
+import type {LoadContext, Plugin} from '@docusaurus/types';
 import type {ThemeConfig} from '@docusaurus/theme-common';
 import {getTranslationFiles, translateThemeConfig} from './translations';
 import {createRequire} from 'module';
@@ -91,10 +92,10 @@ function getInfimaCSSFile(direction: string) {
   }.css`;
 }
 
-export default function docusaurusThemeClassic(
+export default function themeClassic(
   context: LoadContext,
   options: Options,
-): Plugin<void> {
+): Plugin<undefined> {
   const {
     i18n: {currentLocale, localeConfigs},
   } = context;
@@ -118,7 +119,7 @@ export default function docusaurusThemeClassic(
       return '../src/theme';
     },
 
-    getTranslationFiles: async () => getTranslationFiles({themeConfig}),
+    getTranslationFiles: () => getTranslationFiles({themeConfig}),
 
     translateThemeConfig: (params) =>
       translateThemeConfig({
@@ -138,14 +139,15 @@ export default function docusaurusThemeClassic(
         require.resolve(getInfimaCSSFile(direction)),
         './prism-include-languages',
         './admonitions.css',
+        './nprogress',
       ];
 
       if (customCss) {
-        if (Array.isArray(customCss)) {
-          modules.push(...customCss);
-        } else {
-          modules.push(customCss);
-        }
+        modules.push(
+          ...(Array.isArray(customCss) ? customCss : [customCss]).map((p) =>
+            path.resolve(context.siteDir, p),
+          ),
+        );
       }
 
       return modules;
@@ -169,7 +171,7 @@ export default function docusaurusThemeClassic(
       };
     },
 
-    configurePostCss(postCssOptions: PostCssOptions) {
+    configurePostCss(postCssOptions) {
       if (direction === 'rtl') {
         const resolvedInfimaFile = require.resolve(getInfimaCSSFile(direction));
         const plugin: PostCssPlugin = {

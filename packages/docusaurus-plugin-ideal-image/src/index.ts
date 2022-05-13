@@ -9,7 +9,6 @@ import type {
   LoadContext,
   Plugin,
   OptionValidationContext,
-  ValidationResult,
 } from '@docusaurus/types';
 import type {PluginOptions} from '@docusaurus/plugin-ideal-image';
 import {Joi} from '@docusaurus/utils-validation';
@@ -60,7 +59,8 @@ export default function pluginIdealImage(
                 {
                   loader: require.resolve('@docusaurus/responsive-loader'),
                   options: {
-                    emitFile: !isServer, // don't emit for server-side rendering
+                    // Don't emit for server-side rendering
+                    emitFile: !isServer,
                     // eslint-disable-next-line global-require
                     adapter: require('@docusaurus/responsive-loader/sharp'),
                     name: 'assets/ideal-img/[name].[hash:hex:7].[width].[ext]',
@@ -79,7 +79,7 @@ export default function pluginIdealImage(
 export function validateOptions({
   validate,
   options,
-}: OptionValidationContext<PluginOptions>): ValidationResult<PluginOptions> {
+}: OptionValidationContext<PluginOptions, PluginOptions>): PluginOptions {
   const pluginOptionsSchema = Joi.object({
     disableInDev: Joi.boolean().default(true),
   }).unknown();

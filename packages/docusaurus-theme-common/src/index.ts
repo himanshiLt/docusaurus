@@ -22,37 +22,41 @@ export {
 export {
   DocSidebarItemsExpandedStateProvider,
   useDocSidebarItemsExpandedState,
-} from './utils/docSidebarItemsExpandedState';
+} from './contexts/docSidebarItemsExpandedState';
+export {DocsVersionProvider, useDocsVersion} from './contexts/docsVersion';
+export {DocsSidebarProvider, useDocsSidebar} from './contexts/docsSidebar';
 
 export {createStorageSlot, listStorageKeys} from './utils/storageUtils';
 
 export {useAlternatePageUtils} from './utils/useAlternatePageUtils';
 
-export {useContextualSearchFilters} from './utils/useContextualSearchFilters';
-
 export {
   parseCodeBlockTitle,
   parseLanguage,
   parseLines,
+  containsLineNumbers,
+  getPrismCssVariables,
 } from './utils/codeBlockUtils';
 
-export {docVersionSearchTag, DEFAULT_SEARCH_TAG} from './utils/searchUtils';
+export {
+  docVersionSearchTag,
+  DEFAULT_SEARCH_TAG,
+  useContextualSearchFilters,
+} from './utils/searchUtils';
 
 export {
   isDocsPluginEnabled,
-  DocsVersionProvider,
-  useDocsVersion,
   useDocById,
-  DocsSidebarProvider,
-  useDocsSidebar,
   findSidebarCategory,
   findFirstCategoryLink,
   useCurrentSidebarCategory,
   isActiveSidebarItem,
   useSidebarBreadcrumbs,
+  useDocsVersionCandidates,
+  useLayoutDoc,
+  useLayoutDocsSidebar,
+  useDocRouteMetadata,
 } from './utils/docsUtils';
-
-export {isSamePath} from './utils/pathUtils';
 
 export {useTitleFormatter} from './utils/generalUtils';
 
@@ -60,32 +64,22 @@ export {usePluralForm} from './utils/usePluralForm';
 
 export {useLocationChange} from './utils/useLocationChange';
 
-export {usePrevious} from './utils/usePrevious';
-
-export {
-  useCollapsible,
-  Collapsible,
-  type UseCollapsibleConfig,
-  type UseCollapsibleReturns,
-} from './components/Collapsible';
-
-export {default as Details, type DetailsProps} from './components/Details';
+export {useCollapsible, Collapsible} from './components/Collapsible';
 
 export {
   useDocsPreferredVersion,
   useDocsPreferredVersionByPluginId,
-} from './utils/docsPreferredVersion/useDocsPreferredVersion';
+  DocsPreferredVersionContextProvider,
+} from './contexts/docsPreferredVersion';
 
 export {duplicates, uniq} from './utils/jsUtils';
-
-export {DocsPreferredVersionContextProvider} from './utils/docsPreferredVersion/DocsPreferredVersionProvider';
 
 export {ThemeClassNames} from './utils/ThemeClassNames';
 
 export {
   AnnouncementBarProvider,
   useAnnouncementBar,
-} from './utils/announcementBarUtils';
+} from './contexts/announcementBar';
 
 export {useLocalPathname} from './utils/useLocalPathname';
 
@@ -93,15 +87,14 @@ export {
   translateTagsPageTitle,
   listTagsByLetters,
   type TagLetterEntry,
-  type TagsListItem,
 } from './utils/tagsUtils';
 
 export {useHistoryPopHandler} from './utils/historyUtils';
 
 export {
-  default as useTOCHighlight,
+  useTOCHighlight,
   type TOCHighlightConfig,
-} from './utils/useTOCHighlight';
+} from './hooks/useTOCHighlight';
 
 export {
   useFilteredAndTreeifiedTOC,
@@ -116,17 +109,19 @@ export {
   useScrollController,
   useScrollPosition,
   useScrollPositionBlocker,
+  useSmoothScrollTo,
 } from './utils/scrollUtils';
 
 export {
   useIsomorphicLayoutEffect,
   useDynamicCallback,
+  usePrevious,
   ReactContextError,
 } from './utils/reactUtils';
 
 export {isRegexpStringMatch} from './utils/regexpUtils';
 
-export {useHomePageRoute} from './utils/routesUtils';
+export {useHomePageRoute, isSamePath} from './utils/routesUtils';
 
 export {
   PageMetadata,
@@ -138,30 +133,31 @@ export {
   useColorMode,
   ColorModeProvider,
   type ColorMode,
-} from './utils/colorModeUtils';
+} from './contexts/colorMode';
+
+export {splitNavbarItems, NavbarProvider} from './utils/navbarUtils';
 
 export {
   useTabGroupChoice,
   TabGroupChoiceProvider,
-} from './utils/tabGroupChoiceUtils';
+} from './contexts/tabGroupChoice';
 
+export {useNavbarMobileSidebar} from './contexts/navbarMobileSidebar';
 export {
-  splitNavbarItems,
-  NavbarProvider,
-  useNavbarMobileSidebar,
-} from './utils/navbarUtils';
-export {
-  useNavbarSecondaryMenu,
   NavbarSecondaryMenuFiller,
-} from './utils/navbarSecondaryMenuUtils';
-export type {NavbarSecondaryMenuComponent} from './utils/navbarSecondaryMenuUtils';
+  type NavbarSecondaryMenuComponent,
+} from './contexts/navbarSecondaryMenu/content';
+export {useNavbarSecondaryMenu} from './contexts/navbarSecondaryMenu/display';
 
-export {default as useHideableNavbar} from './hooks/useHideableNavbar';
+export {useBackToTopButton} from './hooks/useBackToTopButton';
+export {useHideableNavbar} from './hooks/useHideableNavbar';
 export {
-  default as useKeyboardNavigation,
+  useKeyboardNavigation,
   keyboardFocusedClassName,
 } from './hooks/useKeyboardNavigation';
-export {default as usePrismTheme} from './hooks/usePrismTheme';
-export {default as useLockBodyScroll} from './hooks/useLockBodyScroll';
-export {default as useWindowSize} from './hooks/useWindowSize';
-export {default as useSearchPage} from './hooks/useSearchPage';
+export {usePrismTheme} from './hooks/usePrismTheme';
+export {useLockBodyScroll} from './hooks/useLockBodyScroll';
+export {useWindowSize} from './hooks/useWindowSize';
+export {useSearchPage} from './hooks/useSearchPage';
+export {useCodeWordWrap} from './hooks/useCodeWordWrap';
+export {useSkipToContent} from './hooks/useSkipToContent';

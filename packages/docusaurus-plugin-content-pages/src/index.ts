@@ -21,18 +21,16 @@ import {
   DEFAULT_PLUGIN_ID,
   parseMarkdownString,
 } from '@docusaurus/utils';
-import type {
-  LoadContext,
-  Plugin,
-  OptionValidationContext,
-  ValidationResult,
-} from '@docusaurus/types';
+import type {LoadContext, Plugin} from '@docusaurus/types';
 import admonitions from 'remark-admonitions';
-import {PluginOptionSchema} from './pluginOptionSchema';
-import {validatePageFrontMatter} from './pageFrontMatter';
+import {validatePageFrontMatter} from './frontMatter';
 
-import type {LoadedContent, PagesContentPaths} from './types';
-import type {PluginOptions, Metadata} from '@docusaurus/plugin-content-pages';
+import type {PagesContentPaths} from './types';
+import type {
+  PluginOptions,
+  Metadata,
+  LoadedContent,
+} from '@docusaurus/plugin-content-pages';
 
 export function getContentPathList(contentPaths: PagesContentPaths): string[] {
   return [contentPaths.contentPathLocalized, contentPaths.contentPath];
@@ -176,7 +174,7 @@ export default async function pluginContentPages(
       );
     },
 
-    configureWebpack(_config, isServer, {getJSLoader}) {
+    configureWebpack(config, isServer, {getJSLoader}) {
       const {
         rehypePlugins,
         remarkPlugins,
@@ -241,10 +239,4 @@ export default async function pluginContentPages(
   };
 }
 
-export function validateOptions({
-  validate,
-  options,
-}: OptionValidationContext<PluginOptions>): ValidationResult<PluginOptions> {
-  const validatedOptions = validate(PluginOptionSchema, options);
-  return validatedOptions;
-}
+export {validateOptions} from './options';
